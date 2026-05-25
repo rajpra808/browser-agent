@@ -1,0 +1,34 @@
+# Build
+dist/
+
+# Dependencies
+node_modules/
+
+# Sessions (contain auth cookies — never commit)
+sessions/
+
+# Logs
+logs/
+
+# Config with secrets
+browser-agent.config.json
+
+# Environment
+.env
+.env.*
+
+# Screenshots saved during runs
+screenshots/
+
+# Temp files
+*.tmp
+*.png.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

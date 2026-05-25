@@ -1,0 +1,31 @@
+{
+  "name": "browser-agent",
+  "version": "1.0.0",
+  "description": "Vision-based browser automation CLI with multi-LLM support",
+  "main": "dist/cli.js",
+  "bin": {
+    "browser-agent": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@google/genai": "latest",
+    "openai": "latest",
+    "playwright": "latest",
+    "commander": "latest",
+    "dotenv": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/node": "latest",
+    "tsx": "latest",
+    "vitest": "^2.1.0"
+  }
+}
