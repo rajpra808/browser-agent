@@ -1,9 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
 dotenv.config();
+
+const GLOBAL_BASE = path.join(os.homedir(), '.browser-agent');
 
 const ProviderConfigSchema = z.object({
   model: z.string().optional(),
@@ -23,12 +26,12 @@ const BrowserSchema = z.object({
   sessionDir: z.string().default('./sessions'),
   defaultAccount: z.string().default('default'),
   viewport: ViewportSchema,
-}).default({
+}).default(() => ({
   headless: false,
-  sessionDir: './sessions',
+  sessionDir: path.join(GLOBAL_BASE, 'sessions'),
   defaultAccount: 'default',
   viewport: { width: 1280, height: 800 },
-});
+}));
 
 const AgentSchema = z.object({
   maxSteps: z.number().default(30),
@@ -37,7 +40,7 @@ const AgentSchema = z.object({
 
 const LoggingSchema = z.object({
   dir: z.string().default('./logs'),
-}).default({ dir: './logs' });
+}).default(() => ({ dir: path.join(GLOBAL_BASE, 'logs') }));
 
 const ConfigSchema = z.object({
   provider: z.string().default('claude-api'),

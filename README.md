@@ -6,10 +6,27 @@ Vision-based browser automation CLI. An LLM takes a screenshot, picks pixel coor
 
 ## Install
 
+### Global (recommended — use anywhere)
+
 ```bash
+npm install -g @proshort/browser-agent
+```
+
+Chromium is installed automatically. Sessions and logs are stored in `~/.browser-agent/`.
+
+### Via npx (no install)
+
+```bash
+npx @proshort/browser-agent run "Go to google.com and search for cats"
+```
+
+### From source
+
+```bash
+git clone <repo>
+cd browser-agent
 npm install
 npm run build
-npx playwright install chromium
 ```
 
 ---
@@ -17,16 +34,25 @@ npx playwright install chromium
 ## Quick Start
 
 ```bash
-# 1. Copy and edit config
-cp browser-agent.config.json.example browser-agent.config.json
+# 1. Log in to an account (opens browser, you log in manually — one time only)
+browser-agent login --account instagram_main
 
-# 2. Log in to an account (opens browser, you log in manually)
-node dist/cli.js login --account instagram_main
-
-# 3. Run a task
-node dist/cli.js run "Go to instagram.com and like the first post" \
+# 2. Run a task
+browser-agent run "Go to instagram.com and like the first post" \
   --account instagram_main \
   --provider claude-api
+```
+
+**With API key:**
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... browser-agent run "search for cats on google"
+```
+
+**Using npx:**
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... npx @proshort/browser-agent run "search for cats on google"
 ```
 
 ---

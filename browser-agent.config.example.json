@@ -1,0 +1,35 @@
+{
+  "provider": "claude-api",
+  "providers": {
+    "claude-api": {
+      "model": "claude-sonnet-4-5",
+      "apiKey": "${ANTHROPIC_API_KEY}"
+    },
+    "gemini": {
+      "model": "gemini-2.0-flash",
+      "apiKey": "${GEMINI_API_KEY}"
+    },
+    "openai": {
+      "model": "gpt-4o-mini",
+      "apiKey": "${OPENAI_API_KEY}"
+    },
+    "ollama": {
+      "model": "llava:13b",
+      "baseUrl": "http://localhost:11434"
+    },
+    "claude-code": {}
+  },
+  "browser": {
+    "headless": false,
+    "sessionDir": "./sessions",
+    "defaultAccount": "default",
+    "viewport": { "width": 1280, "height": 800 }
+  },
+  "agent": {
+    "maxSteps": 30,
+    "stepDelayMs": 500
+  },
+  "logging": {
+    "dir": "./logs"
+  }
+}

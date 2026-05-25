@@ -10,7 +10,7 @@ sessions/
 # Logs
 logs/
 
-# Config with secrets
+# Config with secrets (copy from browser-agent.config.example.json)
 browser-agent.config.json
 
 # Environment

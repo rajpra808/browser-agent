@@ -4,6 +4,8 @@ import fs from 'fs';
 import os from 'os';
 import { _resolveEnvVars, _resetConfigCache, getConfig } from './config';
 
+const HOME_BASE = path.join(os.homedir(), '.browser-agent');
+
 describe('_resolveEnvVars', () => {
   it('replaces ${VAR} with env value', () => {
     process.env.TEST_RESOLVE_VAR = 'my-key';
@@ -79,7 +81,9 @@ describe('getConfig', () => {
     expect(config.browser.viewport).toEqual({ width: 1280, height: 800 });
     expect(config.agent.maxSteps).toBe(30);
     expect(config.agent.stepDelayMs).toBe(500);
-    expect(config.logging.dir).toBe('./logs');
+    // Global install defaults point to ~/.browser-agent/
+    expect(config.logging.dir).toBe(path.join(HOME_BASE, 'logs'));
+    expect(config.browser.sessionDir).toBe(path.join(HOME_BASE, 'sessions'));
   });
 
   it('loads config file and overrides defaults', () => {

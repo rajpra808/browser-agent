@@ -1,17 +1,39 @@
 {
-  "name": "browser-agent",
+  "name": "@proshort/browser-agent",
   "version": "1.0.0",
-  "description": "Vision-based browser automation CLI with multi-LLM support",
+  "description": "Vision-based browser automation CLI — LLM sees screenshot, clicks coordinates, no selectors. Supports Claude, Gemini, OpenAI, Ollama.",
   "main": "dist/cli.js",
   "bin": {
     "browser-agent": "dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "browser-agent.config.example.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "browser-automation",
+    "llm",
+    "playwright",
+    "claude",
+    "gemini",
+    "openai",
+    "ollama",
+    "vision",
+    "ai-agent",
+    "cli"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test",
+    "postinstall": "node dist/postinstall.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "latest",
