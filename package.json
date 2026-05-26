@@ -32,7 +32,8 @@
     "start": "node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build && npm test",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test",
     "postinstall": "node dist/postinstall.js"
   },
   "dependencies": {
