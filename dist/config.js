@@ -10,43 +10,59 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const os_1 = __importDefault(require("os"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const zod_1 = require("zod");
 dotenv_1.default.config();
 const GLOBAL_BASE = path_1.default.join(os_1.default.homedir(), '.browser-agent');
-const ProviderConfigSchema = zod_1.z.object({
-    model: zod_1.z.string().optional(),
-    apiKey: zod_1.z.string().optional(),
-    baseUrl: zod_1.z.string().optional(),
-});
-const ViewportSchema = zod_1.z.object({
-    width: zod_1.z.number(),
-    height: zod_1.z.number(),
-}).default({ width: 1280, height: 800 });
-const BrowserSchema = zod_1.z.object({
-    headless: zod_1.z.boolean().default(false),
-    sessionDir: zod_1.z.string().default('./sessions'),
-    defaultAccount: zod_1.z.string().default('default'),
-    viewport: ViewportSchema,
-}).default(() => ({
-    headless: false,
-    sessionDir: path_1.default.join(GLOBAL_BASE, 'sessions'),
-    defaultAccount: 'default',
-    viewport: { width: 1280, height: 800 },
-}));
-const AgentSchema = zod_1.z.object({
-    maxSteps: zod_1.z.number().default(30),
-    stepDelayMs: zod_1.z.number().default(500),
-}).default({ maxSteps: 30, stepDelayMs: 500 });
-const LoggingSchema = zod_1.z.object({
-    dir: zod_1.z.string().default('./logs'),
-}).default(() => ({ dir: path_1.default.join(GLOBAL_BASE, 'logs') }));
-const ConfigSchema = zod_1.z.object({
-    provider: zod_1.z.string().default('claude-api'),
-    providers: zod_1.z.record(ProviderConfigSchema).default({}),
-    browser: BrowserSchema,
-    agent: AgentSchema,
-    logging: LoggingSchema,
-});
+function str(v, fallback) {
+    return typeof v === 'string' && v.length > 0 ? v : fallback;
+}
+function num(v, fallback) {
+    return typeof v === 'number' && isFinite(v) ? v : fallback;
+}
+function bool(v, fallback) {
+    return typeof v === 'boolean' ? v : fallback;
+}
+function parseProviders(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+        return {};
+    const out = {};
+    for (const [k, v] of Object.entries(raw)) {
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+            const p = v;
+            out[k] = {
+                ...(typeof p['model'] === 'string' ? { model: p['model'] } : {}),
+                ...(typeof p['apiKey'] === 'string' ? { apiKey: p['apiKey'] } : {}),
+                ...(typeof p['baseUrl'] === 'string' ? { baseUrl: p['baseUrl'] } : {}),
+            };
+        }
+    }
+    return out;
+}
+function parseConfig(raw) {
+    const browser = (raw['browser'] ?? {});
+    const viewport = (browser['viewport'] ?? {});
+    const agent = (raw['agent'] ?? {});
+    const logging = (raw['logging'] ?? {});
+    return {
+        provider: str(raw['provider'], 'claude-api'),
+        providers: parseProviders(raw['providers']),
+        browser: {
+            headless: bool(browser['headless'], false),
+            sessionDir: str(browser['sessionDir'], path_1.default.join(GLOBAL_BASE, 'sessions')),
+            defaultAccount: str(browser['defaultAccount'], 'default'),
+            viewport: {
+                width: num(viewport['width'], 1280),
+                height: num(viewport['height'], 800),
+            },
+        },
+        agent: {
+            maxSteps: num(agent['maxSteps'], 30),
+            stepDelayMs: num(agent['stepDelayMs'], 500),
+        },
+        logging: {
+            dir: str(logging['dir'], path_1.default.join(GLOBAL_BASE, 'logs')),
+        },
+    };
+}
 function resolveEnvVars(obj) {
     if (typeof obj === 'string') {
         return obj.replace(/\$\{([^}]+)\}/g, (_, key) => process.env[key] ?? '');
@@ -81,21 +97,19 @@ function getConfig() {
     if (cached)
         return cached;
     const raw = resolveEnvVars(loadConfigFile());
-    const parsed = ConfigSchema.parse(raw);
+    const config = parseConfig(raw);
     if (process.env.BROWSER_AGENT_PROVIDER) {
-        parsed.provider = process.env.BROWSER_AGENT_PROVIDER;
+        config.provider = process.env.BROWSER_AGENT_PROVIDER;
     }
-    // Inject env-sourced API keys, preserving any config-file values
-    const providers = parsed.providers;
     if (process.env.ANTHROPIC_API_KEY) {
-        providers['claude-api'] = { ...(providers['claude-api'] ?? {}), apiKey: process.env.ANTHROPIC_API_KEY };
+        config.providers['claude-api'] = { ...(config.providers['claude-api'] ?? {}), apiKey: process.env.ANTHROPIC_API_KEY };
     }
     if (process.env.GEMINI_API_KEY) {
-        providers['gemini'] = { ...(providers['gemini'] ?? {}), apiKey: process.env.GEMINI_API_KEY };
+        config.providers['gemini'] = { ...(config.providers['gemini'] ?? {}), apiKey: process.env.GEMINI_API_KEY };
     }
     if (process.env.OPENAI_API_KEY) {
-        providers['openai'] = { ...(providers['openai'] ?? {}), apiKey: process.env.OPENAI_API_KEY };
+        config.providers['openai'] = { ...(config.providers['openai'] ?? {}), apiKey: process.env.OPENAI_API_KEY };
     }
-    cached = parsed;
+    cached = config;
     return cached;
 }

@@ -2,55 +2,90 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import dotenv from 'dotenv';
-import { z } from 'zod';
 
 dotenv.config();
 
 const GLOBAL_BASE = path.join(os.homedir(), '.browser-agent');
 
-const ProviderConfigSchema = z.object({
-  model: z.string().optional(),
-  apiKey: z.string().optional(),
-  baseUrl: z.string().optional(),
-});
+export interface ProviderConfig {
+  model?: string;
+  apiKey?: string;
+  baseUrl?: string;
+}
 
-export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
+export interface Config {
+  provider: string;
+  providers: Record<string, ProviderConfig>;
+  browser: {
+    headless: boolean;
+    sessionDir: string;
+    defaultAccount: string;
+    viewport: { width: number; height: number };
+  };
+  agent: {
+    maxSteps: number;
+    stepDelayMs: number;
+  };
+  logging: {
+    dir: string;
+  };
+}
 
-const ViewportSchema = z.object({
-  width: z.number(),
-  height: z.number(),
-}).default({ width: 1280, height: 800 });
+function str(v: unknown, fallback: string): string {
+  return typeof v === 'string' && v.length > 0 ? v : fallback;
+}
 
-const BrowserSchema = z.object({
-  headless: z.boolean().default(false),
-  sessionDir: z.string().default('./sessions'),
-  defaultAccount: z.string().default('default'),
-  viewport: ViewportSchema,
-}).default(() => ({
-  headless: false,
-  sessionDir: path.join(GLOBAL_BASE, 'sessions'),
-  defaultAccount: 'default',
-  viewport: { width: 1280, height: 800 },
-}));
+function num(v: unknown, fallback: number): number {
+  return typeof v === 'number' && isFinite(v) ? v : fallback;
+}
 
-const AgentSchema = z.object({
-  maxSteps: z.number().default(30),
-  stepDelayMs: z.number().default(500),
-}).default({ maxSteps: 30, stepDelayMs: 500 });
+function bool(v: unknown, fallback: boolean): boolean {
+  return typeof v === 'boolean' ? v : fallback;
+}
 
-const LoggingSchema = z.object({
-  dir: z.string().default('./logs'),
-}).default(() => ({ dir: path.join(GLOBAL_BASE, 'logs') }));
+function parseProviders(raw: unknown): Record<string, ProviderConfig> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, ProviderConfig> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      const p = v as Record<string, unknown>;
+      out[k] = {
+        ...(typeof p['model'] === 'string' ? { model: p['model'] } : {}),
+        ...(typeof p['apiKey'] === 'string' ? { apiKey: p['apiKey'] } : {}),
+        ...(typeof p['baseUrl'] === 'string' ? { baseUrl: p['baseUrl'] } : {}),
+      };
+    }
+  }
+  return out;
+}
 
-const ConfigSchema = z.object({
-  provider: z.string().default('claude-api'),
-  providers: z.record(ProviderConfigSchema).default({}),
-  browser: BrowserSchema,
-  agent: AgentSchema,
-  logging: LoggingSchema,
-});
+function parseConfig(raw: Record<string, unknown>): Config {
+  const browser = (raw['browser'] ?? {}) as Record<string, unknown>;
+  const viewport = (browser['viewport'] ?? {}) as Record<string, unknown>;
+  const agent = (raw['agent'] ?? {}) as Record<string, unknown>;
+  const logging = (raw['logging'] ?? {}) as Record<string, unknown>;
 
-export type Config = z.infer<typeof ConfigSchema>;
+  return {
+    provider: str(raw['provider'], 'claude-api'),
+    providers: parseProviders(raw['providers']),
+    browser: {
+      headless: bool(browser['headless'], false),
+      sessionDir: str(browser['sessionDir'], path.join(GLOBAL_BASE, 'sessions')),
+      defaultAccount: str(browser['defaultAccount'], 'default'),
+      viewport: {
+        width: num(viewport['width'], 1280),
+        height: num(viewport['height'], 800),
+      },
+    },
+    agent: {
+      maxSteps: num(agent['maxSteps'], 30),
+      stepDelayMs: num(agent['stepDelayMs'], 500),
+    },
+    logging: {
+      dir: str(logging['dir'], path.join(GLOBAL_BASE, 'logs')),
+    },
+  };
+}
 
 function resolveEnvVars(obj: unknown): unknown {
   if (typeof obj === 'string') {
@@ -91,26 +126,23 @@ export function _resetConfigCache(): void {
 export function getConfig(): Config {
   if (cached) return cached;
 
-  const raw = resolveEnvVars(loadConfigFile());
-  const parsed = ConfigSchema.parse(raw);
+  const raw = resolveEnvVars(loadConfigFile()) as Record<string, unknown>;
+  const config = parseConfig(raw);
 
   if (process.env.BROWSER_AGENT_PROVIDER) {
-    parsed.provider = process.env.BROWSER_AGENT_PROVIDER;
+    config.provider = process.env.BROWSER_AGENT_PROVIDER;
   }
-
-  // Inject env-sourced API keys, preserving any config-file values
-  const providers = parsed.providers as Record<string, ProviderConfig>;
 
   if (process.env.ANTHROPIC_API_KEY) {
-    providers['claude-api'] = { ...(providers['claude-api'] ?? {}), apiKey: process.env.ANTHROPIC_API_KEY };
+    config.providers['claude-api'] = { ...(config.providers['claude-api'] ?? {}), apiKey: process.env.ANTHROPIC_API_KEY };
   }
   if (process.env.GEMINI_API_KEY) {
-    providers['gemini'] = { ...(providers['gemini'] ?? {}), apiKey: process.env.GEMINI_API_KEY };
+    config.providers['gemini'] = { ...(config.providers['gemini'] ?? {}), apiKey: process.env.GEMINI_API_KEY };
   }
   if (process.env.OPENAI_API_KEY) {
-    providers['openai'] = { ...(providers['openai'] ?? {}), apiKey: process.env.OPENAI_API_KEY };
+    config.providers['openai'] = { ...(config.providers['openai'] ?? {}), apiKey: process.env.OPENAI_API_KEY };
   }
 
-  cached = parsed;
+  cached = config;
   return cached;
 }
