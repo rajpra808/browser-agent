@@ -1,5 +1,5 @@
 {
-  "name": "@proshort/browser-agent",
+  "name": "@rajpra808/browser-agent",
   "version": "1.0.0",
   "description": "Vision-based browser automation CLI — LLM sees screenshot, clicks coordinates, no selectors. Supports Claude, Gemini, OpenAI, Ollama.",
   "main": "dist/cli.js",
@@ -43,11 +43,11 @@
     "playwright": "latest",
     "commander": "latest",
     "dotenv": "latest",
-    "zod": "latest"
+    "zod": "latest",
+    "typescript": "latest",
+    "@types/node": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "@types/node": "latest",
     "tsx": "latest",
     "vitest": "^2.1.0"
   }

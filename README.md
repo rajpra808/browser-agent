@@ -9,7 +9,7 @@ Vision-based browser automation CLI. An LLM takes a screenshot, picks pixel coor
 ### Global (recommended — use anywhere)
 
 ```bash
-npm install -g @proshort/browser-agent
+npm install -g @rajpra808/browser-agent
 ```
 
 Chromium is installed automatically. Sessions and logs are stored in `~/.browser-agent/`.
@@ -17,7 +17,7 @@ Chromium is installed automatically. Sessions and logs are stored in `~/.browser
 ### Via npx (no install)
 
 ```bash
-npx @proshort/browser-agent run "Go to google.com and search for cats"
+npx @rajpra808/browser-agent run "Go to google.com and search for cats"
 ```
 
 ### From source
@@ -52,7 +52,7 @@ ANTHROPIC_API_KEY=sk-ant-... browser-agent run "search for cats on google"
 **Using npx:**
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-... npx @proshort/browser-agent run "search for cats on google"
+ANTHROPIC_API_KEY=sk-ant-... npx @rajpra808/browser-agent run "search for cats on google"
 ```
 
 ---
