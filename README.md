@@ -2,28 +2,27 @@
 
 Vision-based browser automation CLI. An LLM takes a screenshot, picks pixel coordinates to click or type, executes the action, repeats. No CSS selectors. Supports Claude, Gemini, OpenAI, Ollama (local/free), and Claude Code.
 
+Zero heavy SDK dependencies — all API calls use native `fetch`.
+
 ---
 
 ## Install
 
-### Global (recommended — use anywhere)
-
 ```bash
-npm install -g @rajpra808/browser-agent
+npm install -g github:rajpra808/browser-agent
 ```
 
 Chromium is installed automatically. Sessions and logs are stored in `~/.browser-agent/`.
 
-### Via npx (no install)
-
+If Chromium wasn't auto-installed:
 ```bash
-npx @rajpra808/browser-agent run "Go to google.com and search for cats"
+npx playwright install chromium
 ```
 
 ### From source
 
 ```bash
-git clone <repo>
+git clone https://github.com/rajpra808/browser-agent
 cd browser-agent
 npm install
 npm run build
@@ -34,25 +33,23 @@ npm run build
 ## Quick Start
 
 ```bash
-# 1. Log in to an account (opens browser, you log in manually — one time only)
-browser-agent login --account instagram_main
+# 1. Set API key for your provider
+export ANTHROPIC_API_KEY=sk-ant-...   # Claude
+export GEMINI_API_KEY=AIza...         # Gemini
+export OPENAI_API_KEY=sk-...          # OpenAI
+# Ollama needs no key — runs locally
 
 # 2. Run a task
-browser-agent run "Go to instagram.com and like the first post" \
+browser-agent run "Go to google.com and search for cats" --provider claude-api
+
+# 3. Login to a site (one time per account, saves cookies/session)
+browser-agent login --account instagram_main
+# Browser opens → log in → press Enter → session saved
+
+# 4. Use that session
+browser-agent run "Like the first post on instagram.com" \
   --account instagram_main \
   --provider claude-api
-```
-
-**With API key:**
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-... browser-agent run "search for cats on google"
-```
-
-**Using npx:**
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-... npx @rajpra808/browser-agent run "search for cats on google"
 ```
 
 ---
@@ -62,68 +59,115 @@ ANTHROPIC_API_KEY=sk-ant-... npx @rajpra808/browser-agent run "search for cats o
 ### `run` — Execute a task with AI
 
 ```
-node dist/cli.js run <task> [options]
+browser-agent run <task> [options]
 
 Arguments:
-  task                  Natural language task description (required)
+  task                    Natural language task description (required)
 
 Options:
-  -a, --account <name>  Named session account  (default: "default")
-  -p, --provider <name> AI provider to use      (default: from config)
-  -s, --max-steps <n>   Max steps before giving up (default: 30)
+  -a, --account <name>    Named session account           (default: "default")
+  -p, --provider <name>   AI provider to use              (default: from config)
+  -m, --model <model>     Model override                  (default: from config)
+  -s, --max-steps <n>     Max steps before giving up      (default: 30)
 ```
 
 **Examples:**
 
 ```bash
-# Search on Google
-node dist/cli.js run "Go to google.com and search for TypeScript tutorials" --account default
+# Basic
+browser-agent run "Go to google.com and search for TypeScript tutorials"
 
-# Social media action
-node dist/cli.js run "Open Twitter, find the first tweet about AI, and like it" \
+# Pick provider
+browser-agent run "Search for cats" --provider gemini
+
+# Pick provider + model
+browser-agent run "Search for cats" --provider claude-api --model claude-opus-4-7
+browser-agent run "Search for cats" --provider gemini --model gemini-1.5-pro
+browser-agent run "Search for cats" --provider openai --model gpt-4o
+browser-agent run "Search for cats" --provider ollama --model llava:7b
+
+# With saved session
+browser-agent run "Like the first tweet about AI" \
   --account twitter_work \
-  --provider gemini
-
-# Use Ollama (free, local)
-node dist/cli.js run "Open Hacker News and upvote the top story" \
-  --provider ollama \
-  --max-steps 10
+  --provider claude-api
 
 # Override provider via env
-BROWSER_AGENT_PROVIDER=openai node dist/cli.js run "Fill out the contact form"
+BROWSER_AGENT_PROVIDER=openai browser-agent run "Fill out the contact form"
 ```
+
+---
 
 ### `login` — Manual login (no AI)
 
-Opens a persistent browser session so you can log in to a site. The session (cookies, localStorage) is saved automatically.
+Opens a persistent browser session so you can log in to a site. Session (cookies, localStorage) saved on exit.
 
 ```
-node dist/cli.js login [options]
+browser-agent login [options]
 
 Options:
-  -a, --account <name>  Named session account  (default: "default")
+  -a, --account <name>    Named session account  (default: "default")
 ```
 
 **Example:**
 
 ```bash
-node dist/cli.js login --account twitter_work
-# Browser opens → log in → press Enter in terminal → session saved to sessions/twitter_work/
+browser-agent login --account twitter_work
+# Browser opens → log in → press Enter in terminal → session saved
+
+# Use separate accounts per site / persona
+browser-agent login --account instagram_main
+browser-agent login --account instagram_alt
+browser-agent login --account linkedin_recruiter
 ```
 
-Use a different account name per site / persona:
+---
+
+### `models` — List available models
+
+```
+browser-agent models [provider]
+
+Arguments:
+  provider    Optional: claude-api | gemini | openai | ollama | claude-code
+
+Options:
+  -u, --base-url <url>    Ollama base URL  (default: "http://localhost:11434")
+```
+
+**Examples:**
 
 ```bash
-node dist/cli.js login --account instagram_main
-node dist/cli.js login --account instagram_alt
-node dist/cli.js login --account linkedin_recruiter
+# List all providers and their models
+browser-agent models
+
+# List models for one provider
+browser-agent models claude-api
+browser-agent models gemini
+browser-agent models ollama   # queries local Ollama for installed models
+```
+
+**Output:**
+```
+claude-api  (default: claude-sonnet-4-5)
+  claude-opus-4-7
+  claude-sonnet-4-6
+  claude-haiku-4-5-20251001
+  claude-sonnet-4-5
+  claude-opus-4-5
+
+gemini  (default: gemini-2.0-flash)
+  gemini-2.0-flash
+  gemini-2.0-flash-lite
+  gemini-1.5-pro
+  gemini-1.5-flash
+...
 ```
 
 ---
 
 ## Configuration
 
-File: `browser-agent.config.json` in the project root (or `~/.browser-agent/config.json`).
+Optional config file: `browser-agent.config.json` in the working directory, or `~/.browser-agent/config.json`.
 
 ```json
 {
@@ -163,7 +207,7 @@ File: `browser-agent.config.json` in the project root (or `~/.browser-agent/conf
 }
 ```
 
-`${VAR}` syntax in config values is replaced from environment variables at startup.
+`${VAR}` in config values is replaced from environment variables at startup.
 
 ---
 
@@ -173,28 +217,31 @@ File: `browser-agent.config.json` in the project root (or `~/.browser-agent/conf
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-node dist/cli.js run "task" --provider claude-api
+browser-agent run "task" --provider claude-api
+browser-agent run "task" --provider claude-api --model claude-opus-4-7
 ```
 
-Model default: `claude-sonnet-4-5`. All Claude 3.x+ models support vision.
+Default model: `claude-sonnet-4-5`. See all: `browser-agent models claude-api`.
 
 ### Gemini
 
 ```bash
 export GEMINI_API_KEY=AIza...
-node dist/cli.js run "task" --provider gemini
+browser-agent run "task" --provider gemini
+browser-agent run "task" --provider gemini --model gemini-1.5-pro
 ```
 
-Model default: `gemini-2.0-flash`.
+Default model: `gemini-2.0-flash`. See all: `browser-agent models gemini`.
 
 ### OpenAI
 
 ```bash
 export OPENAI_API_KEY=sk-...
-node dist/cli.js run "task" --provider openai
+browser-agent run "task" --provider openai
+browser-agent run "task" --provider openai --model gpt-4o
 ```
 
-Model default: `gpt-4o-mini`. Use `gpt-4o` for better accuracy.
+Default model: `gpt-4o-mini`. See all: `browser-agent models openai`.
 
 ### Ollama (local, free)
 
@@ -202,97 +249,96 @@ Model default: `gpt-4o-mini`. Use `gpt-4o` for better accuracy.
 # Pull a vision model first
 ollama pull llava:13b   # or: llava:7b, qwen2-vl:7b, minicpm-v
 
-node dist/cli.js run "task" --provider ollama
+browser-agent run "task" --provider ollama
+browser-agent run "task" --provider ollama --model llava:7b
+
+# List what you have installed
+browser-agent models ollama
 ```
 
-Default baseUrl: `http://localhost:11434`. Change in config if Ollama runs elsewhere.
+Default baseUrl: `http://localhost:11434`.
 
 ### Claude Code (subprocess)
 
-Uses the installed `claude` CLI via subprocess. No API key needed — uses your Claude subscription.
+Uses the `claude` CLI. No API key needed — uses your Claude subscription.
 
 ```bash
-node dist/cli.js run "task" --provider claude-code
+browser-agent run "task" --provider claude-code
 ```
 
-Requires `claude` to be installed and authenticated (`claude auth login`).
+Requires `claude` CLI installed and authenticated (`claude auth login`).
 
 ---
 
 ## Session Management
 
-Each `--account` gets its own Playwright browser profile directory under `sessions/`.
+Each `--account` gets its own Playwright browser profile under `~/.browser-agent/sessions/`.
 
 ```
-sessions/
-├── default/          # Default account
-├── instagram_main/   # Saved Instagram login
-├── twitter_work/     # Saved Twitter login
-└── linkedin_main/    # Saved LinkedIn login
+~/.browser-agent/sessions/
+├── default/
+├── instagram_main/
+├── twitter_work/
+└── linkedin_recruiter/
 ```
 
 Sessions persist cookies, localStorage, and IndexedDB. Log in once, reuse indefinitely.
 
-**Clearing a session:**
-
 ```bash
-rm -rf sessions/instagram_main/
+# Clear a session
+rm -rf ~/.browser-agent/sessions/instagram_main/
 ```
 
 ---
 
 ## Logs
 
-After every run, two CSV files are updated in `logs/`:
+After every run, two CSV files are updated in `~/.browser-agent/logs/`.
 
-### `logs/logger.csv` — Per-step log
-
-| Column | Description |
-|---|---|
-| `timestamp` | ISO timestamp of the step |
-| `task_id` | Unique ID for the task run |
-| `step` | Step number (1-based) |
-| `provider` | LLM provider used |
-| `action` | Action type: click/type/scroll/key/wait/done/failed |
-| `x`, `y` | Click coordinates (click action only) |
-| `text` | Text typed (type action only) |
-| `key` | Key pressed (key action only) |
-| `direction` | Scroll direction (scroll action only) |
-| `pixels` | Scroll distance (scroll action only) |
-| `ms` | Wait duration (wait action only) |
-| `reason` | LLM's explanation for the action |
-| `outcome` | `success` or `error: <message>` |
-| `duration_ms` | Total step time (LLM + execution) |
-
-### `logs/stats.csv` — Per-task summary
+### `logger.csv` — Per-step log
 
 | Column | Description |
 |---|---|
-| `task_id` | Unique ID for the task run |
-| `timestamp` | When the task completed |
-| `task` | Full task description |
-| `account` | Account name used |
-| `provider` | LLM provider used |
-| `steps_total` | Number of steps taken |
+| `timestamp` | ISO timestamp |
+| `task_id` | Unique run ID |
+| `step` | Step number |
+| `provider` | Provider used |
+| `action` | click / type / scroll / key / wait / done / failed |
+| `x`, `y` | Click coordinates |
+| `text` | Text typed |
+| `key` | Key pressed |
+| `direction` | Scroll direction |
+| `pixels` | Scroll distance |
+| `ms` | Wait duration |
+| `reason` | LLM's reasoning |
+| `outcome` | `success` or `error: <msg>` |
+| `duration_ms` | Step time (LLM + execution) |
+
+### `stats.csv` — Per-task summary
+
+| Column | Description |
+|---|---|
+| `task_id` | Unique run ID |
+| `timestamp` | Completion time |
+| `task` | Task description |
+| `account` | Account used |
+| `provider` | Provider used |
+| `steps_total` | Steps taken |
 | `outcome` | `done` / `failed` / `max_steps` |
-| `start_time` | Task start timestamp |
-| `end_time` | Task end timestamp |
-| `duration_ms` | Total task duration |
+| `duration_ms` | Total duration |
 | `summary` | LLM's final summary or failure reason |
 
 ---
 
 ## How It Works
 
-1. **Screenshot** — Takes a viewport screenshot of the current browser page
-2. **LLM decision** — Sends screenshot + task + action history to the LLM
+1. **Screenshot** — Takes a viewport screenshot of the current page
+2. **LLM decision** — Sends screenshot + task + action history to the LLM via REST API
 3. **Parse action** — LLM returns a JSON action: `click`, `type`, `scroll`, `key`, `wait`, `done`, or `failed`
 4. **Execute** — Playwright executes the action at the specified coordinates
-5. **Log** — Step is written to `logger.csv`
+5. **Log** — Step written to `logger.csv`
 6. **Repeat** — Until `done`, `failed`, or `maxSteps` reached
 7. **Stats** — Task summary written to `stats.csv`
-
-The LLM prompt instructs the model to return **only** a JSON object with no markdown wrapping.
 
 ---
 
@@ -300,14 +346,14 @@ The LLM prompt instructs the model to return **only** a JSON object with no mark
 
 ```bash
 npm run build       # Compile TypeScript
-npm run dev         # Run CLI via tsx (no build needed)
+npm run dev         # Run via tsx (no build needed)
 npm test            # Run all tests
 npm run test:watch  # Watch mode
 ```
 
 ### Adding a New Provider
 
-1. Create `src/providers/yourprovider.ts` implementing `AIProvider`:
+1. Create `src/providers/yourprovider.ts`:
 
 ```typescript
 import { AIProvider, ActionHistory, BrowserAction, SYSTEM_PROMPT, buildUserMessage, parseAction } from './base';
@@ -316,7 +362,7 @@ import { ProviderConfig } from '../config';
 export class YourProvider implements AIProvider {
   name = 'yourprovider';
 
-  constructor(config: ProviderConfig) { /* init SDK */ }
+  constructor(config: ProviderConfig) {}
 
   async decideAction(
     task: string,
@@ -325,9 +371,13 @@ export class YourProvider implements AIProvider {
     pageUrl?: string
   ): Promise<BrowserAction> {
     const userMessage = buildUserMessage(task, history, pageUrl);
-    // call your SDK with SYSTEM_PROMPT + userMessage + screenshotB64 image
-    const raw = /* response text */;
-    return parseAction(raw);
+    const res = await fetch('https://your-api.com/v1/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ /* ... */ }),
+    });
+    const data = await res.json();
+    return parseAction(data.text);
   }
 }
 ```
@@ -338,16 +388,29 @@ export class YourProvider implements AIProvider {
 case 'yourprovider': return new YourProvider(config);
 ```
 
-3. Add to `browser-agent.config.json` under `providers`.
+3. Add model list to `PROVIDER_MODELS` in `src/providers/index.ts`.
 
 ---
 
 ## Troubleshooting
 
-**Browser doesn't open:** Set `"headless": false` in config (default). Check that Playwright Chromium is installed: `npx playwright install chromium`.
+**`browser-agent: command not found`** — Add npm global bin to PATH:
+```bash
+export PATH="$PATH:$(npm bin -g)"
+echo 'export PATH="$PATH:$(npm bin -g)"' >> ~/.zshrc
+```
 
-**LLM returns invalid JSON:** Enable verbose logging by watching `logger.csv`. The `reason` column shows what the LLM said. Some models need stricter prompting — try a larger model or `claude-api`.
+**Browser doesn't open** — Chromium may need manual install:
+```bash
+npx playwright install chromium
+```
 
-**Session not persisting:** Run `login` command first for the account. Check that `sessions/<account>/` directory exists and has content.
+**LLM returns invalid JSON** — Check `logger.csv` for what the model said. Try a larger model (`--model claude-opus-4-7` or `--model gpt-4o`).
 
-**Ollama vision not working:** Ensure you pulled a vision-capable model (`llava`, `qwen2-vl`, `minicpm-v`). Text-only models like `llama3` will not work.
+**Session not persisting** — Run `browser-agent login --account <name>` first. Check `~/.browser-agent/sessions/<name>/` exists.
+
+**Ollama vision not working** — Pull a vision-capable model. Text-only models (`llama3`, etc.) won't work:
+```bash
+ollama pull llava:13b
+browser-agent models ollama   # confirm it's listed
+```
