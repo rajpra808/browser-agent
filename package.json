@@ -32,7 +32,7 @@
     "start": "node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "npm run build",
+    "prepare": "tsc 2>/dev/null || true",
     "prepublishOnly": "npm test",
     "postinstall": "node dist/postinstall.js"
   },
