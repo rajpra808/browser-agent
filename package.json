@@ -47,7 +47,7 @@
   "optionalDependencies": {
     "@anthropic-ai/sdk": "latest",
     "@google/genai": "latest",
-    "openai": "latest"
+    "openai": "^4.77.0"
   },
   "devDependencies": {
     "tsx": "latest",
