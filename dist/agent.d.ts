@@ -2,6 +2,7 @@ export interface RunOptions {
     task: string;
     account?: string;
     provider?: string;
+    model?: string;
     maxSteps?: number;
 }
 export interface RunResult {

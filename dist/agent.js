@@ -15,11 +15,13 @@ async function runTask(options) {
     const account = options.account ?? config.browser.defaultAccount;
     const providerName = options.provider ?? config.provider;
     const maxSteps = options.maxSteps ?? config.agent.maxSteps;
-    const provider = (0, index_1.createProvider)(providerName, config.providers[providerName] ?? {});
+    const providerConfig = { ...(config.providers[providerName] ?? {}), ...(options.model ? { model: options.model } : {}) };
+    const provider = (0, index_1.createProvider)(providerName, providerConfig);
     const id = taskId();
     const startTime = new Date();
     console.log(`\n[browser-agent] task   : ${options.task}`);
-    console.log(`[browser-agent] account: ${account}  provider: ${providerName}  max-steps: ${maxSteps}\n`);
+    const modelLabel = providerConfig.model ?? '(default)';
+    console.log(`[browser-agent] account: ${account}  provider: ${providerName}  model: ${modelLabel}  max-steps: ${maxSteps}\n`);
     const { page } = await (0, instance_1.getActivePage)(account);
     const history = [];
     let outcome = 'max_steps';

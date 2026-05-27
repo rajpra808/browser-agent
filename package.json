@@ -44,11 +44,6 @@
     "typescript": "latest",
     "@types/node": "latest"
   },
-  "optionalDependencies": {
-    "@anthropic-ai/sdk": "latest",
-    "@google/genai": "latest",
-    "openai": "^4.77.0"
-  },
   "devDependencies": {
     "tsx": "latest",
     "vitest": "^2.1.0"

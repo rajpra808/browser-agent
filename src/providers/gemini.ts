@@ -1,14 +1,13 @@
-import { GoogleGenAI } from '@google/genai';
 import { AIProvider, ActionHistory, BrowserAction, SYSTEM_PROMPT, buildUserMessage, parseAction } from './base';
 import { ProviderConfig } from '../config';
 
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
-  private ai: GoogleGenAI;
+  private apiKey: string;
   private model: string;
 
   constructor(config: ProviderConfig) {
-    this.ai = new GoogleGenAI({ apiKey: config.apiKey ?? '' });
+    this.apiKey = config.apiKey ?? '';
     this.model = config.model ?? 'gemini-2.0-flash';
   }
 
@@ -19,26 +18,26 @@ export class GeminiProvider implements AIProvider {
     pageUrl?: string
   ): Promise<BrowserAction> {
     const userMessage = buildUserMessage(task, history, pageUrl);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
 
-    const response = await this.ai.models.generateContent({
-      model: this.model,
-      contents: [
-        {
-          role: 'user',
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{
           parts: [
-            { inlineData: { mimeType: 'image/png', data: screenshotB64 } },
+            { inline_data: { mime_type: 'image/png', data: screenshotB64 } },
             { text: userMessage },
           ],
-        },
-      ],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0.1,
-        maxOutputTokens: 512,
-      },
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+      }),
     });
 
-    const text = response.text ?? '';
+    if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+    const data = await res.json() as { candidates: Array<{ content: { parts: Array<{ text: string }> } }> };
+    const text = data.candidates[0]?.content?.parts[0]?.text ?? '';
     return parseAction(text);
   }
 }

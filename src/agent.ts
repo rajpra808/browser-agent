@@ -15,6 +15,7 @@ export interface RunOptions {
   task: string;
   account?: string;
   provider?: string;
+  model?: string;
   maxSteps?: number;
 }
 
@@ -29,12 +30,14 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
   const providerName = options.provider ?? config.provider;
   const maxSteps = options.maxSteps ?? config.agent.maxSteps;
 
-  const provider = createProvider(providerName, config.providers[providerName] ?? {});
+  const providerConfig = { ...(config.providers[providerName] ?? {}), ...(options.model ? { model: options.model } : {}) };
+  const provider = createProvider(providerName, providerConfig);
   const id = taskId();
   const startTime = new Date();
 
   console.log(`\n[browser-agent] task   : ${options.task}`);
-  console.log(`[browser-agent] account: ${account}  provider: ${providerName}  max-steps: ${maxSteps}\n`);
+  const modelLabel = providerConfig.model ?? '(default)';
+  console.log(`[browser-agent] account: ${account}  provider: ${providerName}  model: ${modelLabel}  max-steps: ${maxSteps}\n`);
 
   const { page } = await getActivePage(account);
   const history: ActionHistory[] = [];
