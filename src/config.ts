@@ -44,7 +44,7 @@ const LoggingSchema = z.object({
 
 const ConfigSchema = z.object({
   provider: z.string().default('claude-api'),
-  providers: z.record(z.string(), ProviderConfigSchema).default({}),
+  providers: z.record(ProviderConfigSchema).default({}),
   browser: BrowserSchema,
   agent: AgentSchema,
   logging: LoggingSchema,

@@ -42,7 +42,7 @@ const LoggingSchema = zod_1.z.object({
 }).default(() => ({ dir: path_1.default.join(GLOBAL_BASE, 'logs') }));
 const ConfigSchema = zod_1.z.object({
     provider: zod_1.z.string().default('claude-api'),
-    providers: zod_1.z.record(zod_1.z.string(), ProviderConfigSchema).default({}),
+    providers: zod_1.z.record(ProviderConfigSchema).default({}),
     browser: BrowserSchema,
     agent: AgentSchema,
     logging: LoggingSchema,
