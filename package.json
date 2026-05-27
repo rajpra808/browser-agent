@@ -37,15 +37,17 @@
     "postinstall": "node dist/postinstall.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "latest",
-    "@google/genai": "latest",
-    "openai": "latest",
     "playwright": "latest",
     "commander": "latest",
     "dotenv": "latest",
     "zod": "latest",
     "typescript": "latest",
     "@types/node": "latest"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@google/genai": "latest",
+    "openai": "latest"
   },
   "devDependencies": {
     "tsx": "latest",
