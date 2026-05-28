@@ -45,14 +45,21 @@ Examples:
   browser-agent run "search for cats on google" --provider ollama --model llava:7b
   browser-agent run "search for cats on google" --provider openai --model gpt-4o`)
     .action(async (task, opts) => {
+    let code = 0;
     try {
         await (0, agent_1.runTask)({ task, account: opts.account, provider: opts.provider, model: opts.model, maxSteps: opts.maxSteps });
-        process.exit(0);
     }
     catch (err) {
-        console.error('[browser-agent] fatal:', err);
-        process.exit(1);
+        console.error('[browser-agent] fatal:', err instanceof Error ? err.message : err);
+        code = 1;
     }
+    finally {
+        try {
+            await (0, instance_1.closeBrowserContext)(opts.account);
+        }
+        catch { }
+    }
+    process.exit(code);
 });
 program
     .command('login')

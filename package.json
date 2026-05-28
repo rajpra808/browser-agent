@@ -32,8 +32,7 @@
     "start": "node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build && npm test",
-    "postinstall": "node -e \"if(process.env.CI!=='true'&&process.env.CI!=='1'){try{require('child_process').execSync('npx playwright install chromium',{stdio:'inherit'})}catch(e){console.log('[browser-agent] Run: npx playwright install chromium')}}\""
+    "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
     "playwright": "latest",

@@ -10,13 +10,15 @@ Zero heavy SDK dependencies — all API calls use native `fetch`.
 
 ```bash
 npm install -g github:rajpra808/browser-agent
+npx playwright install chromium
 ```
 
-Chromium is installed automatically. Sessions and logs are stored in `~/.browser-agent/`.
+Sessions and logs are stored in `~/.browser-agent/`.
 
-If Chromium wasn't auto-installed:
+If `browser-agent` is not on your PATH after install, your npm global bin is not in `$PATH`:
 ```bash
-npx playwright install chromium
+export PATH="$(npm prefix -g)/bin:$PATH"
+# Persist: add the line above to ~/.zshrc or ~/.bashrc
 ```
 
 ### From source

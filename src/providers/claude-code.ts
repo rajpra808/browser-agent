@@ -22,21 +22,18 @@ export class ClaudeCodeProvider implements AIProvider {
     const userMessage = buildUserMessage(task, history, pageUrl);
     const fullPrompt = `${SYSTEM_PROMPT}\n\n${userMessage}`;
 
-    // Write screenshot to a temp file so we can pass it to the claude CLI
     const tmpImg = path.join(os.tmpdir(), `browser-agent-${Date.now()}.png`);
     fs.writeFileSync(tmpImg, Buffer.from(screenshotB64, 'base64'));
 
     try {
-      // Try vision mode first (requires claude CLI that supports --image)
-      const { stdout } = await execFileAsync(
-        'claude',
-        ['--print', fullPrompt, '--image', tmpImg],
-        { timeout: 60_000 }
-      );
-      return parseAction(stdout.trim());
-    } catch {
-      // Fallback: text-only mode — describe that screenshot is available but pass as base64 note
       try {
+        const { stdout } = await execFileAsync(
+          'claude',
+          ['--print', fullPrompt, '--image', tmpImg],
+          { timeout: 60_000 }
+        );
+        return parseAction(stdout.trim());
+      } catch {
         const textPrompt =
           `${SYSTEM_PROMPT}\n\n[A browser screenshot is attached but your CLI does not support images. ` +
           `Reason on task completion based on the task and action history only.]\n\n${userMessage}`;
@@ -46,9 +43,9 @@ export class ClaudeCodeProvider implements AIProvider {
           { timeout: 60_000 }
         );
         return parseAction(stdout.trim());
-      } finally {
-        fs.unlinkSync(tmpImg);
       }
+    } finally {
+      try { fs.unlinkSync(tmpImg); } catch {}
     }
   }
 }

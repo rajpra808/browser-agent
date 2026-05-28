@@ -5,6 +5,11 @@ import { getConfig } from '../config';
 
 const contexts = new Map<string, BrowserContext>();
 
+function isMissingChromium(err: unknown): boolean {
+  const msg = String(err);
+  return msg.includes("Executable doesn't exist") || msg.includes('playwright install');
+}
+
 export async function getBrowserContext(account: string): Promise<BrowserContext> {
   const existing = contexts.get(account);
   if (existing) return existing;
@@ -16,11 +21,21 @@ export async function getBrowserContext(account: string): Promise<BrowserContext
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
-  const context = await chromium.launchPersistentContext(sessionDir, {
-    headless: config.browser.headless,
-    viewport: config.browser.viewport,
-    args: ['--no-sandbox'],
-  });
+  let context: BrowserContext;
+  try {
+    context = await chromium.launchPersistentContext(sessionDir, {
+      headless: config.browser.headless,
+      viewport: config.browser.viewport,
+      args: ['--no-sandbox'],
+    });
+  } catch (err) {
+    if (isMissingChromium(err)) {
+      throw new Error(
+        'Chromium browser not installed. Run:\n\n  npx playwright install chromium\n'
+      );
+    }
+    throw err;
+  }
 
   contexts.set(account, context);
   return context;
