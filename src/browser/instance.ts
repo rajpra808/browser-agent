@@ -10,7 +10,11 @@ function isMissingChromium(err: unknown): boolean {
   return msg.includes("Executable doesn't exist") || msg.includes('playwright install');
 }
 
-export async function getBrowserContext(account: string): Promise<BrowserContext> {
+export interface LaunchOverrides {
+  headless?: boolean;
+}
+
+export async function getBrowserContext(account: string, overrides: LaunchOverrides = {}): Promise<BrowserContext> {
   const existing = contexts.get(account);
   if (existing) return existing;
 
@@ -21,10 +25,11 @@ export async function getBrowserContext(account: string): Promise<BrowserContext
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
+  const headless = overrides.headless ?? config.browser.headless;
   let context: BrowserContext;
   try {
     context = await chromium.launchPersistentContext(sessionDir, {
-      headless: config.browser.headless,
+      headless,
       viewport: config.browser.viewport,
       args: [
         '--no-sandbox',
@@ -55,8 +60,8 @@ export async function getBrowserContext(account: string): Promise<BrowserContext
   return context;
 }
 
-export async function getActivePage(account: string): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await getBrowserContext(account);
+export async function getActivePage(account: string, overrides: LaunchOverrides = {}): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await getBrowserContext(account, overrides);
   const pages = context.pages();
 
   // Reuse last open non-closed page, or open a new one

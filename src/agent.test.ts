@@ -182,7 +182,7 @@ describe('runTask', () => {
     (getActivePage as ReturnType<typeof vi.fn>).mockResolvedValue({ page: makePage() });
 
     await runTask({ task: 'test task', account: 'instagram_main' });
-    expect(getActivePage).toHaveBeenCalledWith('instagram_main');
+    expect(getActivePage).toHaveBeenCalledWith('instagram_main', expect.anything());
   });
 
   it('continues on browser execute error and marks step as error', async () => {

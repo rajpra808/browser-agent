@@ -13,6 +13,7 @@ export type BrowserAction =
   | { action: 'forward'; reason: string }
   | { action: 'reload'; reason: string }
   | { action: 'wait'; ms: number; reason: string }
+  | { action: 'save_screenshot'; path: string; reason: string }
   | { action: 'done'; summary: string }
   | { action: 'failed'; reason: string };
 
@@ -56,6 +57,7 @@ Available actions (respond with exactly one):
 {"action":"forward","reason":"why"}
 {"action":"reload","reason":"why"}
 {"action":"wait","ms":1000,"reason":"why"}
+{"action":"save_screenshot","path":"/abs/or/relative/path.png","reason":"why"}
 {"action":"done","summary":"what was accomplished"}
 {"action":"failed","reason":"why you cannot complete the task"}
 
@@ -95,6 +97,7 @@ export function buildUserMessage(
               case 'forward':      desc = `forward — ${a.reason}`; break;
               case 'reload':       desc = `reload — ${a.reason}`; break;
               case 'wait':         desc = `wait(${a.ms}ms) — ${a.reason}`; break;
+              case 'save_screenshot': desc = `save_screenshot(${a.path}) — ${a.reason}`; break;
               case 'done':         desc = `done: ${a.summary}`; break;
               case 'failed':       desc = `failed: ${a.reason}`; break;
             }

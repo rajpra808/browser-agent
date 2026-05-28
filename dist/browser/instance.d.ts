@@ -1,6 +1,9 @@
 import { BrowserContext, Page } from 'playwright';
-export declare function getBrowserContext(account: string): Promise<BrowserContext>;
-export declare function getActivePage(account: string): Promise<{
+export interface LaunchOverrides {
+    headless?: boolean;
+}
+export declare function getBrowserContext(account: string, overrides?: LaunchOverrides): Promise<BrowserContext>;
+export declare function getActivePage(account: string, overrides?: LaunchOverrides): Promise<{
     context: BrowserContext;
     page: Page;
 }>;

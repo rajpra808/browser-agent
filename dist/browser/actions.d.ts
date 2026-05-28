@@ -1,4 +1,5 @@
 import { Page } from 'playwright';
+export declare function saveScreenshot(page: Page, target: string): Promise<string>;
 export declare function screenshot(page: Page): Promise<string>;
 export declare function click(page: Page, x: number, y: number): Promise<void>;
 export declare function doubleClick(page: Page, x: number, y: number): Promise<void>;

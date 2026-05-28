@@ -27,6 +27,7 @@ Available actions (respond with exactly one):
 {"action":"forward","reason":"why"}
 {"action":"reload","reason":"why"}
 {"action":"wait","ms":1000,"reason":"why"}
+{"action":"save_screenshot","path":"/abs/or/relative/path.png","reason":"why"}
 {"action":"done","summary":"what was accomplished"}
 {"action":"failed","reason":"why you cannot complete the task"}
 
@@ -86,6 +87,9 @@ function buildUserMessage(task, history, pageUrl) {
                     break;
                 case 'wait':
                     desc = `wait(${a.ms}ms) — ${a.reason}`;
+                    break;
+                case 'save_screenshot':
+                    desc = `save_screenshot(${a.path}) — ${a.reason}`;
                     break;
                 case 'done':
                     desc = `done: ${a.summary}`;

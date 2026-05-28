@@ -22,7 +22,7 @@ async function runTask(options) {
     console.log(`\n[browser-agent] task   : ${options.task}`);
     const modelLabel = providerConfig.model ?? '(default)';
     console.log(`[browser-agent] account: ${account}  provider: ${providerName}  model: ${modelLabel}  max-steps: ${maxSteps}\n`);
-    const { page } = await (0, instance_1.getActivePage)(account);
+    const { page } = await (0, instance_1.getActivePage)(account, { headless: options.headless });
     if (page.url() === 'about:blank') {
         await page.goto('data:text/html,<!doctype html><html><body></body></html>').catch(() => { });
     }
@@ -155,5 +155,10 @@ async function executeAction(page, action) {
         case 'wait':
             await (0, actions_1.wait)(action.ms);
             break;
+        case 'save_screenshot': {
+            const saved = await (0, actions_1.saveScreenshot)(page, action.path);
+            console.log(`           saved screenshot → ${saved}`);
+            break;
+        }
     }
 }

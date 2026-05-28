@@ -4,6 +4,7 @@ export interface RunOptions {
     provider?: string;
     model?: string;
     maxSteps?: number;
+    headless?: boolean;
 }
 export interface RunResult {
     outcome: 'done' | 'failed' | 'max_steps';

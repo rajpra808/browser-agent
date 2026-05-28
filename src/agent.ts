@@ -5,6 +5,7 @@ import { ActionHistory, BrowserAction } from './providers/base';
 import { getActivePage } from './browser/instance';
 import {
   screenshot,
+  saveScreenshot,
   click,
   doubleClick,
   rightClick,
@@ -33,6 +34,7 @@ export interface RunOptions {
   provider?: string;
   model?: string;
   maxSteps?: number;
+  headless?: boolean;
 }
 
 export interface RunResult {
@@ -55,7 +57,7 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
   const modelLabel = providerConfig.model ?? '(default)';
   console.log(`[browser-agent] account: ${account}  provider: ${providerName}  model: ${modelLabel}  max-steps: ${maxSteps}\n`);
 
-  const { page } = await getActivePage(account);
+  const { page } = await getActivePage(account, { headless: options.headless });
   if (page.url() === 'about:blank') {
     await page.goto('data:text/html,<!doctype html><html><body></body></html>').catch(() => {});
   }
@@ -170,5 +172,10 @@ async function executeAction(page: Page, action: BrowserAction): Promise<void> {
     case 'forward':      await goForward(page); break;
     case 'reload':       await reload(page); break;
     case 'wait':         await wait(action.ms); break;
+    case 'save_screenshot': {
+      const saved = await saveScreenshot(page, action.path);
+      console.log(`           saved screenshot → ${saved}`);
+      break;
+    }
   }
 }

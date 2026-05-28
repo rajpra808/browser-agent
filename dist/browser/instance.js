@@ -15,7 +15,7 @@ function isMissingChromium(err) {
     const msg = String(err);
     return msg.includes("Executable doesn't exist") || msg.includes('playwright install');
 }
-async function getBrowserContext(account) {
+async function getBrowserContext(account, overrides = {}) {
     const existing = contexts.get(account);
     if (existing)
         return existing;
@@ -24,10 +24,11 @@ async function getBrowserContext(account) {
     if (!fs_1.default.existsSync(sessionDir)) {
         fs_1.default.mkdirSync(sessionDir, { recursive: true });
     }
+    const headless = overrides.headless ?? config.browser.headless;
     let context;
     try {
         context = await playwright_1.chromium.launchPersistentContext(sessionDir, {
-            headless: config.browser.headless,
+            headless,
             viewport: config.browser.viewport,
             args: [
                 '--no-sandbox',
@@ -54,8 +55,8 @@ async function getBrowserContext(account) {
     contexts.set(account, context);
     return context;
 }
-async function getActivePage(account) {
-    const context = await getBrowserContext(account);
+async function getActivePage(account, overrides = {}) {
+    const context = await getBrowserContext(account, overrides);
     const pages = context.pages();
     // Reuse last open non-closed page, or open a new one
     let page;

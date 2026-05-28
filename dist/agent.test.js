@@ -184,7 +184,7 @@ function makePage() {
         index_1.createProvider.mockReturnValue(provider);
         instance_1.getActivePage.mockResolvedValue({ page: makePage() });
         await (0, agent_1.runTask)({ task: 'test task', account: 'instagram_main' });
-        (0, vitest_1.expect)(instance_1.getActivePage).toHaveBeenCalledWith('instagram_main');
+        (0, vitest_1.expect)(instance_1.getActivePage).toHaveBeenCalledWith('instagram_main', vitest_1.expect.anything());
     });
     (0, vitest_1.it)('continues on browser execute error and marks step as error', async () => {
         actions.click.mockRejectedValueOnce(new Error('click failed'));

@@ -14,7 +14,7 @@ const program = new commander_1.Command();
 program
     .name('browser-agent')
     .description('Vision-based browser automation — LLM sees screenshot, clicks coordinates, no selectors')
-    .version('1.3.0')
+    .version('1.4.0')
     .addHelpText('after', `
 Providers: claude-api | gemini | openai | ollama | claude-code
 
@@ -38,6 +38,8 @@ program
     .option('-p, --provider <name>', `AI provider (${index_1.PROVIDERS.join(' | ')})`)
     .option('-m, --model <model>', 'Model to use (overrides config default)')
     .option('-s, --max-steps <n>', 'Max steps before giving up', (v) => parseInt(v, 10))
+    .option('--headless', 'Force headless browser (default: auto-detect)')
+    .option('--no-headless', 'Force headed browser (visible window)')
     .addHelpText('after', `
 Examples:
   browser-agent run "search for cats on google" --provider claude-api
@@ -47,7 +49,14 @@ Examples:
     .action(async (task, opts) => {
     let code = 0;
     try {
-        await (0, agent_1.runTask)({ task, account: opts.account, provider: opts.provider, model: opts.model, maxSteps: opts.maxSteps });
+        await (0, agent_1.runTask)({
+            task,
+            account: opts.account,
+            provider: opts.provider,
+            model: opts.model,
+            maxSteps: opts.maxSteps,
+            headless: opts.headless,
+        });
     }
     catch (err) {
         console.error('[browser-agent] fatal:', err instanceof Error ? err.message : err);

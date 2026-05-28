@@ -1,4 +1,23 @@
 import { Page } from 'playwright';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
+export async function saveScreenshot(page: Page, target: string): Promise<string> {
+  let resolved = target.startsWith('~') ? path.join(os.homedir(), target.slice(1)) : target;
+  resolved = path.resolve(resolved);
+
+  let stat: fs.Stats | null = null;
+  try { stat = fs.statSync(resolved); } catch {}
+  if (stat?.isDirectory() || /[\\/]$/.test(target) || !path.extname(resolved)) {
+    const fname = `browser-agent-${Date.now()}.png`;
+    resolved = path.join(resolved, fname);
+  }
+
+  fs.mkdirSync(path.dirname(resolved), { recursive: true });
+  await page.screenshot({ path: resolved, type: 'png', fullPage: true });
+  return resolved;
+}
 
 export async function screenshot(page: Page): Promise<string> {
   await page.waitForLoadState('domcontentloaded').catch(() => {});

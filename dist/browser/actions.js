@@ -1,5 +1,9 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.saveScreenshot = saveScreenshot;
 exports.screenshot = screenshot;
 exports.click = click;
 exports.doubleClick = doubleClick;
@@ -15,6 +19,25 @@ exports.goBack = goBack;
 exports.goForward = goForward;
 exports.reload = reload;
 exports.wait = wait;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const os_1 = __importDefault(require("os"));
+async function saveScreenshot(page, target) {
+    let resolved = target.startsWith('~') ? path_1.default.join(os_1.default.homedir(), target.slice(1)) : target;
+    resolved = path_1.default.resolve(resolved);
+    let stat = null;
+    try {
+        stat = fs_1.default.statSync(resolved);
+    }
+    catch { }
+    if (stat?.isDirectory() || /[\\/]$/.test(target) || !path_1.default.extname(resolved)) {
+        const fname = `browser-agent-${Date.now()}.png`;
+        resolved = path_1.default.join(resolved, fname);
+    }
+    fs_1.default.mkdirSync(path_1.default.dirname(resolved), { recursive: true });
+    await page.screenshot({ path: resolved, type: 'png', fullPage: true });
+    return resolved;
+}
 async function screenshot(page) {
     await page.waitForLoadState('domcontentloaded').catch(() => { });
     try {

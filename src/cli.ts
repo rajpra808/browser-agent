@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name('browser-agent')
   .description('Vision-based browser automation — LLM sees screenshot, clicks coordinates, no selectors')
-  .version('1.3.0')
+  .version('1.4.0')
   .addHelpText('after', `
 Providers: claude-api | gemini | openai | ollama | claude-code
 
@@ -36,16 +36,25 @@ program
   .option('-p, --provider <name>', `AI provider (${PROVIDERS.join(' | ')})`)
   .option('-m, --model <model>', 'Model to use (overrides config default)')
   .option('-s, --max-steps <n>', 'Max steps before giving up', (v) => parseInt(v, 10))
+  .option('--headless', 'Force headless browser (default: auto-detect)')
+  .option('--no-headless', 'Force headed browser (visible window)')
   .addHelpText('after', `
 Examples:
   browser-agent run "search for cats on google" --provider claude-api
   browser-agent run "search for cats on google" --provider gemini --model gemini-1.5-pro
   browser-agent run "search for cats on google" --provider ollama --model llava:7b
   browser-agent run "search for cats on google" --provider openai --model gpt-4o`)
-  .action(async (task: string, opts: { account: string; provider?: string; model?: string; maxSteps?: number }) => {
+  .action(async (task: string, opts: { account: string; provider?: string; model?: string; maxSteps?: number; headless?: boolean }) => {
     let code = 0;
     try {
-      await runTask({ task, account: opts.account, provider: opts.provider, model: opts.model, maxSteps: opts.maxSteps });
+      await runTask({
+        task,
+        account: opts.account,
+        provider: opts.provider,
+        model: opts.model,
+        maxSteps: opts.maxSteps,
+        headless: opts.headless,
+      });
     } catch (err) {
       console.error('[browser-agent] fatal:', err instanceof Error ? err.message : err);
       code = 1;
