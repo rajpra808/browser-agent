@@ -14,6 +14,18 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajpra808/browser-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rajpra808/browser-agent/issues"
+  },
+  "homepage": "https://github.com/rajpra808/browser-agent#readme",
+  "license": "MIT",
   "keywords": [
     "browser-automation",
     "llm",
@@ -35,14 +47,14 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
-    "playwright": "latest",
-    "commander": "latest",
-    "dotenv": "latest"
+    "playwright": "^1.60.0",
+    "commander": "^14.0.0",
+    "dotenv": "^17.0.0"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "@types/node": "latest",
-    "tsx": "latest",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
     "vitest": "^2.1.0"
   }
 }

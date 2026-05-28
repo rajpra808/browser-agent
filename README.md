@@ -9,14 +9,11 @@ Zero heavy SDK dependencies — all API calls use native `fetch`.
 ## Install
 
 ```bash
-npm install -g https://github.com/rajpra808/browser-agent/releases/latest/download/browser-agent.tgz
+npm install -g @rajpra808/browser-agent
 npx playwright install chromium
 ```
 
 Sessions and logs are stored in `~/.browser-agent/`.
-
-> Why a release tarball instead of `npm install -g github:user/repo`?
-> `npm install -g` from a raw git URL has a known bug where npm leaves the install as a dangling symlink to its own temp cache. The release tarball bypasses that code path entirely.
 
 If `browser-agent` is not on your PATH after install:
 ```bash
