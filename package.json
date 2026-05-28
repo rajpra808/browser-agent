@@ -32,18 +32,17 @@
     "start": "node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "tsc 2>/dev/null || true",
-    "prepublishOnly": "npm test",
+    "prepublishOnly": "npm run build && npm test",
     "postinstall": "node -e \"if(process.env.CI!=='true'&&process.env.CI!=='1'){try{require('child_process').execSync('npx playwright install chromium',{stdio:'inherit'})}catch(e){console.log('[browser-agent] Run: npx playwright install chromium')}}\""
   },
   "dependencies": {
     "playwright": "latest",
     "commander": "latest",
-    "dotenv": "latest",
-    "typescript": "latest",
-    "@types/node": "latest"
+    "dotenv": "latest"
   },
   "devDependencies": {
+    "typescript": "latest",
+    "@types/node": "latest",
     "tsx": "latest",
     "vitest": "^2.1.0"
   }
