@@ -14,7 +14,7 @@ const program = new commander_1.Command();
 program
     .name('browser-agent')
     .description('Vision-based browser automation — LLM sees screenshot, clicks coordinates, no selectors')
-    .version('1.2.0')
+    .version('1.3.0')
     .addHelpText('after', `
 Providers: claude-api | gemini | openai | ollama | claude-code
 

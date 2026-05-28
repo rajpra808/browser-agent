@@ -4,7 +4,7 @@ import { getConfig } from '../config';
 import { BrowserAction, getActionReason } from '../providers/base';
 
 const HEADER =
-  'timestamp,task_id,step,provider,action,url,x,y,text,key,direction,pixels,ms,reason,outcome,duration_ms\n';
+  'timestamp,task_id,step,provider,action,details,reason,outcome,duration_ms\n';
 
 function logPath(): string {
   return path.resolve(getConfig().logging.dir, 'logger.csv');
@@ -38,18 +38,16 @@ export interface StepLogEntry {
   durationMs: number;
 }
 
+function actionDetails(a: BrowserAction): string {
+  const { action, ...rest } = a as { action: string; [k: string]: unknown };
+  const { reason: _r, summary: _s, ...fields } = rest as Record<string, unknown>;
+  return Object.keys(fields).length ? JSON.stringify(fields) : '';
+}
+
 export function logStep(entry: StepLogEntry): void {
   ensureFile();
 
   const a = entry.action;
-  const url  = a.action === 'navigate' ? a.url       : undefined;
-  const x    = a.action === 'click'    ? a.x         : undefined;
-  const y    = a.action === 'click'    ? a.y         : undefined;
-  const text = a.action === 'type'     ? a.text      : undefined;
-  const key  = a.action === 'key'      ? a.key       : undefined;
-  const dir  = a.action === 'scroll'   ? a.direction : undefined;
-  const px   = a.action === 'scroll'   ? a.pixels    : undefined;
-  const ms   = a.action === 'wait'     ? a.ms        : undefined;
   const outcomeStr = entry.error
     ? `${entry.outcome}: ${entry.error}`
     : entry.outcome;
@@ -61,7 +59,7 @@ export function logStep(entry: StepLogEntry): void {
       entry.step,
       entry.provider,
       a.action,
-      url, x, y, text, key, dir, px, ms,
+      actionDetails(a),
       getActionReason(a),
       outcomeStr,
       entry.durationMs,

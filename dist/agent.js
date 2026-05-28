@@ -119,14 +119,38 @@ async function executeAction(page, action) {
         case 'click':
             await (0, actions_1.click)(page, action.x, action.y);
             break;
+        case 'double_click':
+            await (0, actions_1.doubleClick)(page, action.x, action.y);
+            break;
+        case 'right_click':
+            await (0, actions_1.rightClick)(page, action.x, action.y);
+            break;
+        case 'hover':
+            await (0, actions_1.hover)(page, action.x, action.y);
+            break;
+        case 'drag':
+            await (0, actions_1.drag)(page, action.fromX, action.fromY, action.toX, action.toY);
+            break;
         case 'type':
             await (0, actions_1.typeText)(page, action.text);
+            break;
+        case 'clear':
+            await (0, actions_1.clearField)(page);
+            break;
+        case 'key':
+            await (0, actions_1.pressKey)(page, action.key);
             break;
         case 'scroll':
             await (0, actions_1.scroll)(page, action.direction, action.pixels);
             break;
-        case 'key':
-            await (0, actions_1.pressKey)(page, action.key);
+        case 'back':
+            await (0, actions_1.goBack)(page);
+            break;
+        case 'forward':
+            await (0, actions_1.goForward)(page);
+            break;
+        case 'reload':
+            await (0, actions_1.reload)(page);
             break;
         case 'wait':
             await (0, actions_1.wait)(action.ms);

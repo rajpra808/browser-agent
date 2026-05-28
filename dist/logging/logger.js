@@ -8,7 +8,7 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const config_1 = require("../config");
 const base_1 = require("../providers/base");
-const HEADER = 'timestamp,task_id,step,provider,action,url,x,y,text,key,direction,pixels,ms,reason,outcome,duration_ms\n';
+const HEADER = 'timestamp,task_id,step,provider,action,details,reason,outcome,duration_ms\n';
 function logPath() {
     return path_1.default.resolve((0, config_1.getConfig)().logging.dir, 'logger.csv');
 }
@@ -29,17 +29,14 @@ function esc(v) {
         ? `"${s.replace(/"/g, '""')}"`
         : s;
 }
+function actionDetails(a) {
+    const { action, ...rest } = a;
+    const { reason: _r, summary: _s, ...fields } = rest;
+    return Object.keys(fields).length ? JSON.stringify(fields) : '';
+}
 function logStep(entry) {
     ensureFile();
     const a = entry.action;
-    const url = a.action === 'navigate' ? a.url : undefined;
-    const x = a.action === 'click' ? a.x : undefined;
-    const y = a.action === 'click' ? a.y : undefined;
-    const text = a.action === 'type' ? a.text : undefined;
-    const key = a.action === 'key' ? a.key : undefined;
-    const dir = a.action === 'scroll' ? a.direction : undefined;
-    const px = a.action === 'scroll' ? a.pixels : undefined;
-    const ms = a.action === 'wait' ? a.ms : undefined;
     const outcomeStr = entry.error
         ? `${entry.outcome}: ${entry.error}`
         : entry.outcome;
@@ -49,7 +46,7 @@ function logStep(entry) {
         entry.step,
         entry.provider,
         a.action,
-        url, x, y, text, key, dir, px, ms,
+        actionDetails(a),
         (0, base_1.getActionReason)(a),
         outcomeStr,
         entry.durationMs,

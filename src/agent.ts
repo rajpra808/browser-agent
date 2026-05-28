@@ -3,7 +3,23 @@ import { getConfig } from './config';
 import { createProvider } from './providers/index';
 import { ActionHistory, BrowserAction } from './providers/base';
 import { getActivePage } from './browser/instance';
-import { screenshot, click, typeText, scroll, pressKey, wait, navigate } from './browser/actions';
+import {
+  screenshot,
+  click,
+  doubleClick,
+  rightClick,
+  hover,
+  drag,
+  typeText,
+  clearField,
+  scroll,
+  pressKey,
+  wait,
+  navigate,
+  goBack,
+  goForward,
+  reload,
+} from './browser/actions';
 import { logStep } from './logging/logger';
 import { logStats } from './logging/stats';
 
@@ -140,23 +156,19 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
 
 async function executeAction(page: Page, action: BrowserAction): Promise<void> {
   switch (action.action) {
-    case 'navigate':
-      await navigate(page, action.url);
-      break;
-    case 'click':
-      await click(page, action.x, action.y);
-      break;
-    case 'type':
-      await typeText(page, action.text);
-      break;
-    case 'scroll':
-      await scroll(page, action.direction, action.pixels);
-      break;
-    case 'key':
-      await pressKey(page, action.key);
-      break;
-    case 'wait':
-      await wait(action.ms);
-      break;
+    case 'navigate':     await navigate(page, action.url); break;
+    case 'click':        await click(page, action.x, action.y); break;
+    case 'double_click': await doubleClick(page, action.x, action.y); break;
+    case 'right_click':  await rightClick(page, action.x, action.y); break;
+    case 'hover':        await hover(page, action.x, action.y); break;
+    case 'drag':         await drag(page, action.fromX, action.fromY, action.toX, action.toY); break;
+    case 'type':         await typeText(page, action.text); break;
+    case 'clear':        await clearField(page); break;
+    case 'key':          await pressKey(page, action.key); break;
+    case 'scroll':       await scroll(page, action.direction, action.pixels); break;
+    case 'back':         await goBack(page); break;
+    case 'forward':      await goForward(page); break;
+    case 'reload':       await reload(page); break;
+    case 'wait':         await wait(action.ms); break;
   }
 }
