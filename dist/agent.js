@@ -23,6 +23,9 @@ async function runTask(options) {
     const modelLabel = providerConfig.model ?? '(default)';
     console.log(`[browser-agent] account: ${account}  provider: ${providerName}  model: ${modelLabel}  max-steps: ${maxSteps}\n`);
     const { page } = await (0, instance_1.getActivePage)(account);
+    if (page.url() === 'about:blank') {
+        await page.goto('data:text/html,<!doctype html><html><body></body></html>').catch(() => { });
+    }
     const history = [];
     let outcome = 'max_steps';
     let summary = 'Max steps reached without completion';
@@ -110,6 +113,9 @@ async function runTask(options) {
 }
 async function executeAction(page, action) {
     switch (action.action) {
+        case 'navigate':
+            await (0, actions_1.navigate)(page, action.url);
+            break;
         case 'click':
             await (0, actions_1.click)(page, action.x, action.y);
             break;

@@ -8,7 +8,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor(config: ProviderConfig) {
     this.apiKey = config.apiKey ?? '';
-    this.model = config.model ?? 'gemini-2.0-flash';
+    this.model = config.model ?? 'gemini-3-flash-preview';
   }
 
   async decideAction(
@@ -31,7 +31,7 @@ export class GeminiProvider implements AIProvider {
             { text: userMessage },
           ],
         }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
       }),
     });
 

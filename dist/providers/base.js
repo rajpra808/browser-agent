@@ -13,13 +13,18 @@ Rules:
 - Coordinates x and y are pixel positions in the screenshot
 
 Available actions (respond with exactly one):
+{"action":"navigate","url":"https://example.com","reason":"why"}
 {"action":"click","x":450,"y":230,"reason":"why you are clicking here"}
 {"action":"type","text":"the text to type","reason":"why"}
 {"action":"scroll","direction":"down","pixels":300,"reason":"why"}
 {"action":"key","key":"Enter","reason":"why"}
 {"action":"wait","ms":1000,"reason":"why"}
 {"action":"done","summary":"what was accomplished"}
-{"action":"failed","reason":"why you cannot complete the task"}`;
+{"action":"failed","reason":"why you cannot complete the task"}
+
+Tips:
+- Use navigate to go directly to a URL (avoids needing to click an address bar).
+- Keep the reason short (under 10 words).`;
 function buildUserMessage(task, history, pageUrl) {
     const urlLine = pageUrl ? `\nCurrent URL: ${pageUrl}` : '';
     const historyText = history.length === 0
@@ -29,6 +34,9 @@ function buildUserMessage(task, history, pageUrl) {
             const a = h.action;
             let desc;
             switch (a.action) {
+                case 'navigate':
+                    desc = `navigate(${a.url}) — ${a.reason}`;
+                    break;
                 case 'click':
                     desc = `click(${a.x},${a.y}) — ${a.reason}`;
                     break;

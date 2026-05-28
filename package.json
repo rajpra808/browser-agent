@@ -1,6 +1,6 @@
 {
   "name": "@rajpra808/browser-agent",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Vision-based browser automation CLI — LLM sees screenshot, clicks coordinates, no selectors. Supports Claude, Gemini, OpenAI, Ollama.",
   "main": "dist/cli.js",
   "bin": {

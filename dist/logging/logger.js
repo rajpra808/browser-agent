@@ -8,7 +8,7 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const config_1 = require("../config");
 const base_1 = require("../providers/base");
-const HEADER = 'timestamp,task_id,step,provider,action,x,y,text,key,direction,pixels,ms,reason,outcome,duration_ms\n';
+const HEADER = 'timestamp,task_id,step,provider,action,url,x,y,text,key,direction,pixels,ms,reason,outcome,duration_ms\n';
 function logPath() {
     return path_1.default.resolve((0, config_1.getConfig)().logging.dir, 'logger.csv');
 }
@@ -32,6 +32,7 @@ function esc(v) {
 function logStep(entry) {
     ensureFile();
     const a = entry.action;
+    const url = a.action === 'navigate' ? a.url : undefined;
     const x = a.action === 'click' ? a.x : undefined;
     const y = a.action === 'click' ? a.y : undefined;
     const text = a.action === 'type' ? a.text : undefined;
@@ -48,7 +49,7 @@ function logStep(entry) {
         entry.step,
         entry.provider,
         a.action,
-        x, y, text, key, dir, px, ms,
+        url, x, y, text, key, dir, px, ms,
         (0, base_1.getActionReason)(a),
         outcomeStr,
         entry.durationMs,

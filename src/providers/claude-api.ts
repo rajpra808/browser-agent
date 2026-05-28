@@ -28,7 +28,7 @@ export class ClaudeApiProvider implements AIProvider {
       },
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 512,
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [{
           role: 'user',

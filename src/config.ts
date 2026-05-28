@@ -59,6 +59,11 @@ function parseProviders(raw: unknown): Record<string, ProviderConfig> {
   return out;
 }
 
+function defaultHeadless(): boolean {
+  if (process.platform !== 'linux') return false;
+  return !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY;
+}
+
 function parseConfig(raw: Record<string, unknown>): Config {
   const browser = (raw['browser'] ?? {}) as Record<string, unknown>;
   const viewport = (browser['viewport'] ?? {}) as Record<string, unknown>;
@@ -69,7 +74,7 @@ function parseConfig(raw: Record<string, unknown>): Config {
     provider: str(raw['provider'], 'claude-api'),
     providers: parseProviders(raw['providers']),
     browser: {
-      headless: bool(browser['headless'], false),
+      headless: bool(browser['headless'], defaultHeadless()),
       sessionDir: str(browser['sessionDir'], path.join(GLOBAL_BASE, 'sessions')),
       defaultAccount: str(browser['defaultAccount'], 'default'),
       viewport: {

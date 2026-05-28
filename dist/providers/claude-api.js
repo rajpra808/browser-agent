@@ -21,7 +21,7 @@ class ClaudeApiProvider {
             },
             body: JSON.stringify({
                 model: this.model,
-                max_tokens: 512,
+                max_tokens: 2048,
                 system: base_1.SYSTEM_PROMPT,
                 messages: [{
                         role: 'user',

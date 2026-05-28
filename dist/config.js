@@ -37,6 +37,11 @@ function parseProviders(raw) {
     }
     return out;
 }
+function defaultHeadless() {
+    if (process.platform !== 'linux')
+        return false;
+    return !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY;
+}
 function parseConfig(raw) {
     const browser = (raw['browser'] ?? {});
     const viewport = (browser['viewport'] ?? {});
@@ -46,7 +51,7 @@ function parseConfig(raw) {
         provider: str(raw['provider'], 'claude-api'),
         providers: parseProviders(raw['providers']),
         browser: {
-            headless: bool(browser['headless'], false),
+            headless: bool(browser['headless'], defaultHeadless()),
             sessionDir: str(browser['sessionDir'], path_1.default.join(GLOBAL_BASE, 'sessions')),
             defaultAccount: str(browser['defaultAccount'], 'default'),
             viewport: {

@@ -3,7 +3,7 @@ import { getConfig } from './config';
 import { createProvider } from './providers/index';
 import { ActionHistory, BrowserAction } from './providers/base';
 import { getActivePage } from './browser/instance';
-import { screenshot, click, typeText, scroll, pressKey, wait } from './browser/actions';
+import { screenshot, click, typeText, scroll, pressKey, wait, navigate } from './browser/actions';
 import { logStep } from './logging/logger';
 import { logStats } from './logging/stats';
 
@@ -40,6 +40,9 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
   console.log(`[browser-agent] account: ${account}  provider: ${providerName}  model: ${modelLabel}  max-steps: ${maxSteps}\n`);
 
   const { page } = await getActivePage(account);
+  if (page.url() === 'about:blank') {
+    await page.goto('data:text/html,<!doctype html><html><body></body></html>').catch(() => {});
+  }
   const history: ActionHistory[] = [];
   let outcome: RunResult['outcome'] = 'max_steps';
   let summary = 'Max steps reached without completion';
@@ -137,6 +140,9 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
 
 async function executeAction(page: Page, action: BrowserAction): Promise<void> {
   switch (action.action) {
+    case 'navigate':
+      await navigate(page, action.url);
+      break;
     case 'click':
       await click(page, action.x, action.y);
       break;

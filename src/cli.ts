@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name('browser-agent')
   .description('Vision-based browser automation — LLM sees screenshot, clicks coordinates, no selectors')
-  .version('1.0.0')
+  .version('1.2.0')
   .addHelpText('after', `
 Providers: claude-api | gemini | openai | ollama | claude-code
 
@@ -105,7 +105,8 @@ Examples:
         console.error(`Unknown provider: "${p}". Valid: ${PROVIDERS.join(', ')}`);
         process.exit(1);
       }
-      const models = await listModels(p, baseUrl);
+      const apiKey = config.providers?.[p]?.apiKey;
+      const models = await listModels(p, { baseUrl, apiKey });
       const defaultModel = config.providers?.[p]?.model ?? Object.values(PROVIDER_MODELS[p] ?? [])[0] ?? 'n/a';
       console.log(`\n${p}  (default: ${defaultModel})`);
       if (models.length === 0) {

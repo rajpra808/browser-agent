@@ -1,8 +1,15 @@
 import { Page } from 'playwright';
 
 export async function screenshot(page: Page): Promise<string> {
-  const buf = await page.screenshot({ type: 'png', fullPage: false });
-  return buf.toString('base64');
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
+  try {
+    const buf = await page.screenshot({ type: 'png', fullPage: false });
+    return buf.toString('base64');
+  } catch (err) {
+    await new Promise<void>((r) => setTimeout(r, 500));
+    const buf = await page.screenshot({ type: 'png', fullPage: false });
+    return buf.toString('base64');
+  }
 }
 
 export async function click(page: Page, x: number, y: number): Promise<void> {
@@ -20,6 +27,11 @@ export async function scroll(page: Page, direction: 'up' | 'down', pixels: numbe
 
 export async function pressKey(page: Page, key: string): Promise<void> {
   await page.keyboard.press(key);
+}
+
+export async function navigate(page: Page, url: string): Promise<void> {
+  const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 }
 
 export async function wait(ms: number): Promise<void> {

@@ -20,7 +20,7 @@ class OpenAIProvider {
             },
             body: JSON.stringify({
                 model: this.model,
-                max_tokens: 512,
+                max_tokens: 2048,
                 temperature: 0.1,
                 messages: [
                     { role: 'system', content: base_1.SYSTEM_PROMPT },

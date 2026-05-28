@@ -1,4 +1,8 @@
 export type BrowserAction = {
+    action: 'navigate';
+    url: string;
+    reason: string;
+} | {
     action: 'click';
     x: number;
     y: number;
@@ -37,7 +41,7 @@ export interface AIProvider {
     name: string;
     decideAction(task: string, screenshotB64: string, history: ActionHistory[], pageUrl?: string): Promise<BrowserAction>;
 }
-export declare const SYSTEM_PROMPT = "You are a browser automation agent. Complete tasks by analyzing browser screenshots and deciding what action to take next.\n\nRules:\n- Examine the screenshot carefully before deciding\n- Pick the most logical next step toward completing the task\n- Respond with ONLY a JSON object \u2014 no markdown, no explanation, no code fences\n- Coordinates x and y are pixel positions in the screenshot\n\nAvailable actions (respond with exactly one):\n{\"action\":\"click\",\"x\":450,\"y\":230,\"reason\":\"why you are clicking here\"}\n{\"action\":\"type\",\"text\":\"the text to type\",\"reason\":\"why\"}\n{\"action\":\"scroll\",\"direction\":\"down\",\"pixels\":300,\"reason\":\"why\"}\n{\"action\":\"key\",\"key\":\"Enter\",\"reason\":\"why\"}\n{\"action\":\"wait\",\"ms\":1000,\"reason\":\"why\"}\n{\"action\":\"done\",\"summary\":\"what was accomplished\"}\n{\"action\":\"failed\",\"reason\":\"why you cannot complete the task\"}";
+export declare const SYSTEM_PROMPT = "You are a browser automation agent. Complete tasks by analyzing browser screenshots and deciding what action to take next.\n\nRules:\n- Examine the screenshot carefully before deciding\n- Pick the most logical next step toward completing the task\n- Respond with ONLY a JSON object \u2014 no markdown, no explanation, no code fences\n- Coordinates x and y are pixel positions in the screenshot\n\nAvailable actions (respond with exactly one):\n{\"action\":\"navigate\",\"url\":\"https://example.com\",\"reason\":\"why\"}\n{\"action\":\"click\",\"x\":450,\"y\":230,\"reason\":\"why you are clicking here\"}\n{\"action\":\"type\",\"text\":\"the text to type\",\"reason\":\"why\"}\n{\"action\":\"scroll\",\"direction\":\"down\",\"pixels\":300,\"reason\":\"why\"}\n{\"action\":\"key\",\"key\":\"Enter\",\"reason\":\"why\"}\n{\"action\":\"wait\",\"ms\":1000,\"reason\":\"why\"}\n{\"action\":\"done\",\"summary\":\"what was accomplished\"}\n{\"action\":\"failed\",\"reason\":\"why you cannot complete the task\"}\n\nTips:\n- Use navigate to go directly to a URL (avoids needing to click an address bar).\n- Keep the reason short (under 10 words).";
 export declare function buildUserMessage(task: string, history: ActionHistory[], pageUrl?: string): string;
 export declare function parseAction(raw: string): BrowserAction;
 export declare function getActionReason(action: BrowserAction): string;

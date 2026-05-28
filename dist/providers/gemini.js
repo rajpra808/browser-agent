@@ -8,7 +8,7 @@ class GeminiProvider {
     model;
     constructor(config) {
         this.apiKey = config.apiKey ?? '';
-        this.model = config.model ?? 'gemini-2.0-flash';
+        this.model = config.model ?? 'gemini-3-flash-preview';
     }
     async decideAction(task, screenshotB64, history, pageUrl) {
         const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl);
@@ -24,7 +24,7 @@ class GeminiProvider {
                             { text: userMessage },
                         ],
                     }],
-                generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+                generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
             }),
         });
         if (!res.ok)

@@ -1,4 +1,5 @@
 export type BrowserAction =
+  | { action: 'navigate'; url: string; reason: string }
   | { action: 'click'; x: number; y: number; reason: string }
   | { action: 'type'; text: string; reason: string }
   | { action: 'scroll'; direction: 'up' | 'down'; pixels: number; reason: string }
@@ -33,13 +34,18 @@ Rules:
 - Coordinates x and y are pixel positions in the screenshot
 
 Available actions (respond with exactly one):
+{"action":"navigate","url":"https://example.com","reason":"why"}
 {"action":"click","x":450,"y":230,"reason":"why you are clicking here"}
 {"action":"type","text":"the text to type","reason":"why"}
 {"action":"scroll","direction":"down","pixels":300,"reason":"why"}
 {"action":"key","key":"Enter","reason":"why"}
 {"action":"wait","ms":1000,"reason":"why"}
 {"action":"done","summary":"what was accomplished"}
-{"action":"failed","reason":"why you cannot complete the task"}`;
+{"action":"failed","reason":"why you cannot complete the task"}
+
+Tips:
+- Use navigate to go directly to a URL (avoids needing to click an address bar).
+- Keep the reason short (under 10 words).`;
 
 export function buildUserMessage(
   task: string,
@@ -56,13 +62,14 @@ export function buildUserMessage(
             const a = h.action;
             let desc: string;
             switch (a.action) {
-              case 'click':   desc = `click(${a.x},${a.y}) — ${a.reason}`; break;
-              case 'type':    desc = `type("${a.text}") — ${a.reason}`; break;
-              case 'scroll':  desc = `scroll(${a.direction},${a.pixels}px) — ${a.reason}`; break;
-              case 'key':     desc = `key(${a.key}) — ${a.reason}`; break;
-              case 'wait':    desc = `wait(${a.ms}ms) — ${a.reason}`; break;
-              case 'done':    desc = `done: ${a.summary}`; break;
-              case 'failed':  desc = `failed: ${a.reason}`; break;
+              case 'navigate': desc = `navigate(${a.url}) — ${a.reason}`; break;
+              case 'click':    desc = `click(${a.x},${a.y}) — ${a.reason}`; break;
+              case 'type':     desc = `type("${a.text}") — ${a.reason}`; break;
+              case 'scroll':   desc = `scroll(${a.direction},${a.pixels}px) — ${a.reason}`; break;
+              case 'key':      desc = `key(${a.key}) — ${a.reason}`; break;
+              case 'wait':     desc = `wait(${a.ms}ms) — ${a.reason}`; break;
+              case 'done':     desc = `done: ${a.summary}`; break;
+              case 'failed':   desc = `failed: ${a.reason}`; break;
             }
             const status = h.outcome === 'error' ? ` [ERROR: ${h.error}]` : '';
             return `  ${h.step}. ${desc}${status}`;
