@@ -21,11 +21,26 @@ vi.mock('./browser/instance', () => ({
 
 vi.mock('./browser/actions', () => ({
   screenshot: vi.fn(),
-  click: vi.fn(),
+  saveScreenshot: vi.fn(),
+  clickElement: vi.fn(),
+  doubleClickElement: vi.fn(),
+  rightClickElement: vi.fn(),
+  hoverElement: vi.fn(),
+  drag: vi.fn(),
   typeText: vi.fn(),
+  clearField: vi.fn(),
   scroll: vi.fn(),
   pressKey: vi.fn(),
   wait: vi.fn(),
+  navigate: vi.fn(),
+  goBack: vi.fn(),
+  goForward: vi.fn(),
+  reload: vi.fn(),
+}));
+
+vi.mock('./browser/marks', () => ({
+  annotatePage: vi.fn(() => Promise.resolve([])),
+  clearMarks: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('./logging/logger', () => ({
@@ -53,13 +68,17 @@ function makeProvider(responses: BrowserAction[]) {
 }
 
 function makePage() {
-  return { url: vi.fn(() => 'https://test.com'), isClosed: vi.fn(() => false) };
+  return {
+    url: vi.fn(() => 'https://test.com'),
+    isClosed: vi.fn(() => false),
+    evaluate: vi.fn(() => Promise.resolve('')),
+  };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   (actions.screenshot as ReturnType<typeof vi.fn>).mockResolvedValue('base64screenshot');
-  (actions.click as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+  (actions.clickElement as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
   (actions.typeText as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
   (actions.scroll as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
   (actions.pressKey as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
@@ -90,7 +109,7 @@ describe('runTask', () => {
   });
 
   it('returns max_steps when provider never finishes', async () => {
-    const provider = makeProvider([{ action: 'click', x: 100, y: 200, reason: 'keep clicking' }]);
+    const provider = makeProvider([{ action: 'click', id: 1, reason: 'keep clicking' }]);
     (createProvider as ReturnType<typeof vi.fn>).mockReturnValue(provider);
     (getActivePage as ReturnType<typeof vi.fn>).mockResolvedValue({ page: makePage() });
 
@@ -100,14 +119,14 @@ describe('runTask', () => {
 
   it('executes click action via browser', async () => {
     const provider = makeProvider([
-      { action: 'click', x: 300, y: 400, reason: 'click search' },
+      { action: 'click', id: 7, reason: 'click search' },
       { action: 'done', summary: 'clicked' },
     ]);
     (createProvider as ReturnType<typeof vi.fn>).mockReturnValue(provider);
     (getActivePage as ReturnType<typeof vi.fn>).mockResolvedValue({ page: makePage() });
 
     await runTask({ task: 'test task' });
-    expect(actions.click).toHaveBeenCalledWith(expect.anything(), 300, 400);
+    expect(actions.clickElement).toHaveBeenCalledWith(expect.anything(), 7);
   });
 
   it('executes type action via browser', async () => {
@@ -119,7 +138,7 @@ describe('runTask', () => {
     (getActivePage as ReturnType<typeof vi.fn>).mockResolvedValue({ page: makePage() });
 
     await runTask({ task: 'test task' });
-    expect(actions.typeText).toHaveBeenCalledWith(expect.anything(), 'hello world');
+    expect(actions.typeText).toHaveBeenCalledWith(expect.anything(), 'hello world', undefined);
   });
 
   it('executes scroll action via browser', async () => {
@@ -148,7 +167,7 @@ describe('runTask', () => {
 
   it('logs each step to logger.csv', async () => {
     const provider = makeProvider([
-      { action: 'click', x: 0, y: 0, reason: 'step 1' },
+      { action: 'click', id: 0, reason: 'step 1' },
       { action: 'done', summary: 'done' },
     ]);
     (createProvider as ReturnType<typeof vi.fn>).mockReturnValue(provider);
@@ -186,9 +205,9 @@ describe('runTask', () => {
   });
 
   it('continues on browser execute error and marks step as error', async () => {
-    (actions.click as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('click failed'));
+    (actions.clickElement as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('click failed'));
     const provider = makeProvider([
-      { action: 'click', x: 0, y: 0, reason: 'try click' },
+      { action: 'click', id: 0, reason: 'try click' },
       { action: 'done', summary: 'recovered' },
     ]);
     (createProvider as ReturnType<typeof vi.fn>).mockReturnValue(provider);

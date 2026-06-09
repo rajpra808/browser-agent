@@ -39,7 +39,7 @@ describe('logStep', () => {
       taskId: 'task1',
       step: 1,
       provider: 'claude-api',
-      action: { action: 'click', x: 100, y: 200, reason: 'test' },
+      action: { action: 'click', id: 4, reason: 'test' },
       outcome: 'success',
       durationMs: 500,
     };
@@ -50,20 +50,19 @@ describe('logStep', () => {
     expect(content.startsWith('timestamp,task_id,step,provider,action,')).toBe(true);
   });
 
-  it('appends a row for click action with x/y', () => {
+  it('appends a row for click action with element id', () => {
     const entry: StepLogEntry = {
       taskId: 'abc',
       step: 2,
       provider: 'gemini',
-      action: { action: 'click', x: 300, y: 450, reason: 'click button' },
+      action: { action: 'click', id: 42, reason: 'click button' },
       outcome: 'success',
       durationMs: 123,
     };
     logStep(entry);
     const content = fs.readFileSync(path.join(tmpDir, 'logger.csv'), 'utf8');
     expect(content).toContain('click');
-    expect(content).toContain('300');
-    expect(content).toContain('450');
+    expect(content).toContain('42');
     expect(content).toContain('click button');
     expect(content).toContain('gemini');
   });
@@ -88,7 +87,7 @@ describe('logStep', () => {
       taskId: 'err1',
       step: 1,
       provider: 'ollama',
-      action: { action: 'click', x: 0, y: 0, reason: 'test' },
+      action: { action: 'click', id: 0, reason: 'test' },
       outcome: 'error',
       error: 'element stale',
       durationMs: 10,

@@ -10,8 +10,8 @@ class ClaudeApiProvider {
         this.apiKey = config.apiKey ?? '';
         this.model = config.model ?? 'claude-sonnet-4-5';
     }
-    async decideAction(task, screenshotB64, history, pageUrl) {
-        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl);
+    async decideAction(task, screenshotB64, history, pageUrl, marks) {
+        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl, marks);
         const res = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {

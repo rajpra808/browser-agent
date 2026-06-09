@@ -31,20 +31,28 @@ export async function screenshot(page: Page): Promise<string> {
   }
 }
 
-export async function click(page: Page, x: number, y: number): Promise<void> {
-  await page.mouse.click(x, y);
+function markLocator(page: Page, id: number) {
+  return page.locator(`[data-som-id="${id}"]`);
 }
 
-export async function doubleClick(page: Page, x: number, y: number): Promise<void> {
-  await page.mouse.dblclick(x, y);
+export async function clickElement(page: Page, id: number): Promise<void> {
+  await markLocator(page, id).click({ timeout: 5_000 });
 }
 
-export async function rightClick(page: Page, x: number, y: number): Promise<void> {
-  await page.mouse.click(x, y, { button: 'right' });
+export async function doubleClickElement(page: Page, id: number): Promise<void> {
+  await markLocator(page, id).dblclick({ timeout: 5_000 });
 }
 
-export async function hover(page: Page, x: number, y: number): Promise<void> {
-  await page.mouse.move(x, y);
+export async function rightClickElement(page: Page, id: number): Promise<void> {
+  await markLocator(page, id).click({ button: 'right', timeout: 5_000 });
+}
+
+export async function hoverElement(page: Page, id: number): Promise<void> {
+  await markLocator(page, id).hover({ timeout: 5_000 });
+}
+
+export async function focusElement(page: Page, id: number): Promise<void> {
+  await markLocator(page, id).click({ timeout: 5_000 });
 }
 
 export async function drag(page: Page, fromX: number, fromY: number, toX: number, toY: number): Promise<void> {
@@ -54,7 +62,8 @@ export async function drag(page: Page, fromX: number, fromY: number, toX: number
   await page.mouse.up();
 }
 
-export async function typeText(page: Page, text: string): Promise<void> {
+export async function typeText(page: Page, text: string, id?: number): Promise<void> {
+  if (id !== undefined) await focusElement(page, id);
   await page.keyboard.type(text, { delay: 50 });
 }
 

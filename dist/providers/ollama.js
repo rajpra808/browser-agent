@@ -10,8 +10,8 @@ class OllamaProvider {
         this.model = config.model ?? 'llava:13b';
         this.baseUrl = (config.baseUrl ?? 'http://localhost:11434').replace(/\/$/, '');
     }
-    async decideAction(task, screenshotB64, history, pageUrl) {
-        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl);
+    async decideAction(task, screenshotB64, history, pageUrl, marks) {
+        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl, marks);
         const body = {
             model: this.model,
             messages: [

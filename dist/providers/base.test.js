@@ -4,8 +4,8 @@ const vitest_1 = require("vitest");
 const base_1 = require("./base");
 (0, vitest_1.describe)('parseAction', () => {
     (0, vitest_1.it)('parses clean click JSON', () => {
-        const a = (0, base_1.parseAction)('{"action":"click","x":450,"y":230,"reason":"click login"}');
-        (0, vitest_1.expect)(a).toEqual({ action: 'click', x: 450, y: 230, reason: 'click login' });
+        const a = (0, base_1.parseAction)('{"action":"click","id":5,"reason":"click login"}');
+        (0, vitest_1.expect)(a).toEqual({ action: 'click', id: 5, reason: 'click login' });
     });
     (0, vitest_1.it)('parses type action', () => {
         const a = (0, base_1.parseAction)('{"action":"type","text":"hello@test.com","reason":"enter email"}');
@@ -32,46 +32,53 @@ const base_1 = require("./base");
         (0, vitest_1.expect)(a).toEqual({ action: 'failed', reason: 'element not found' });
     });
     (0, vitest_1.it)('strips ```json markdown fences', () => {
-        const a = (0, base_1.parseAction)('```json\n{"action":"click","x":100,"y":200,"reason":"test"}\n```');
-        (0, vitest_1.expect)(a).toEqual({ action: 'click', x: 100, y: 200, reason: 'test' });
+        const a = (0, base_1.parseAction)('```json\n{"action":"click","id":3,"reason":"test"}\n```');
+        (0, vitest_1.expect)(a).toEqual({ action: 'click', id: 3, reason: 'test' });
     });
     (0, vitest_1.it)('strips plain ``` markdown fences', () => {
         const a = (0, base_1.parseAction)('```\n{"action":"done","summary":"ok"}\n```');
         (0, vitest_1.expect)(a).toEqual({ action: 'done', summary: 'ok' });
     });
     (0, vitest_1.it)('extracts JSON embedded in surrounding text', () => {
-        const a = (0, base_1.parseAction)('I will click the login button: {"action":"click","x":300,"y":150,"reason":"login btn"}');
+        const a = (0, base_1.parseAction)('I will click the login button: {"action":"click","id":7,"reason":"login btn"}');
         (0, vitest_1.expect)(a.action).toBe('click');
     });
     (0, vitest_1.it)('throws when input is not JSON', () => {
         (0, vitest_1.expect)(() => (0, base_1.parseAction)('I cannot determine the next action')).toThrow();
     });
     (0, vitest_1.it)('throws when action field is missing', () => {
-        (0, vitest_1.expect)(() => (0, base_1.parseAction)('{"x":100,"y":200,"reason":"test"}')).toThrow();
+        (0, vitest_1.expect)(() => (0, base_1.parseAction)('{"id":4,"reason":"test"}')).toThrow();
     });
 });
 (0, vitest_1.describe)('buildUserMessage', () => {
     (0, vitest_1.it)('includes task in output', () => {
-        const msg = (0, base_1.buildUserMessage)('search cats', []);
+        const msg = (0, base_1.buildUserMessage)('search cats', [], undefined, []);
         (0, vitest_1.expect)(msg).toContain('TASK: search cats');
     });
     (0, vitest_1.it)('includes current URL when provided', () => {
-        const msg = (0, base_1.buildUserMessage)('search', [], 'https://google.com');
+        const msg = (0, base_1.buildUserMessage)('search', [], 'https://google.com', []);
         (0, vitest_1.expect)(msg).toContain('Current URL: https://google.com');
     });
     (0, vitest_1.it)('shows "No actions taken yet" for empty history', () => {
-        const msg = (0, base_1.buildUserMessage)('task', []);
+        const msg = (0, base_1.buildUserMessage)('task', [], undefined, []);
         (0, vitest_1.expect)(msg).toContain('No actions taken yet.');
+    });
+    (0, vitest_1.it)('renders the element list by id', () => {
+        const msg = (0, base_1.buildUserMessage)('task', [], undefined, [
+            { id: 5, tag: 'input', role: 'searchbox', name: 'Search' },
+        ]);
+        (0, vitest_1.expect)(msg).toContain('[5] input');
+        (0, vitest_1.expect)(msg).toContain('"Search"');
     });
     (0, vitest_1.it)('formats click history entry', () => {
         const history = [{
                 step: 1,
-                action: { action: 'click', x: 100, y: 200, reason: 'clicked btn' },
+                action: { action: 'click', id: 5, reason: 'clicked btn' },
                 outcome: 'success',
             }];
-        const msg = (0, base_1.buildUserMessage)('task', history);
+        const msg = (0, base_1.buildUserMessage)('task', history, undefined, []);
         (0, vitest_1.expect)(msg).toContain('1.');
-        (0, vitest_1.expect)(msg).toContain('click(100,200)');
+        (0, vitest_1.expect)(msg).toContain('click(#5)');
         (0, vitest_1.expect)(msg).toContain('clicked btn');
     });
     (0, vitest_1.it)('formats type history entry', () => {
@@ -80,38 +87,48 @@ const base_1 = require("./base");
                 action: { action: 'type', text: 'hello', reason: 'enter text' },
                 outcome: 'success',
             }];
-        const msg = (0, base_1.buildUserMessage)('task', history);
+        const msg = (0, base_1.buildUserMessage)('task', history, undefined, []);
         (0, vitest_1.expect)(msg).toContain('type("hello")');
+    });
+    (0, vitest_1.it)('appends feedback on history entry', () => {
+        const history = [{
+                step: 1,
+                action: { action: 'click', id: 2, reason: 'test' },
+                outcome: 'success',
+                feedback: 'focused: input[Search]',
+            }];
+        const msg = (0, base_1.buildUserMessage)('task', history, undefined, []);
+        (0, vitest_1.expect)(msg).toContain('focused: input[Search]');
     });
     (0, vitest_1.it)('appends error info on failed history entry', () => {
         const history = [{
                 step: 1,
-                action: { action: 'click', x: 0, y: 0, reason: 'test' },
+                action: { action: 'click', id: 0, reason: 'test' },
                 outcome: 'error',
                 error: 'element not found',
             }];
-        const msg = (0, base_1.buildUserMessage)('task', history);
+        const msg = (0, base_1.buildUserMessage)('task', history, undefined, []);
         (0, vitest_1.expect)(msg).toContain('[ERROR: element not found]');
     });
     (0, vitest_1.it)('formats multiple history entries in order', () => {
         const history = [
-            { step: 1, action: { action: 'click', x: 10, y: 20, reason: 'a' }, outcome: 'success' },
+            { step: 1, action: { action: 'click', id: 1, reason: 'a' }, outcome: 'success' },
             { step: 2, action: { action: 'type', text: 'hello', reason: 'b' }, outcome: 'success' },
         ];
-        const msg = (0, base_1.buildUserMessage)('task', history);
+        const msg = (0, base_1.buildUserMessage)('task', history, undefined, []);
         const idx1 = msg.indexOf('1.');
         const idx2 = msg.indexOf('2.');
         (0, vitest_1.expect)(idx1).toBeGreaterThanOrEqual(0);
         (0, vitest_1.expect)(idx2).toBeGreaterThan(idx1);
     });
     (0, vitest_1.it)('omits URL line when pageUrl not provided', () => {
-        const msg = (0, base_1.buildUserMessage)('task', []);
+        const msg = (0, base_1.buildUserMessage)('task', [], undefined, []);
         (0, vitest_1.expect)(msg).not.toContain('Current URL:');
     });
 });
 (0, vitest_1.describe)('getActionReason', () => {
     (0, vitest_1.it)('returns reason for click', () => {
-        const a = { action: 'click', x: 0, y: 0, reason: 'click reason' };
+        const a = { action: 'click', id: 0, reason: 'click reason' };
         (0, vitest_1.expect)((0, base_1.getActionReason)(a)).toBe('click reason');
     });
     (0, vitest_1.it)('returns reason for type', () => {

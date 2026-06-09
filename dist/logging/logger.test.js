@@ -36,7 +36,7 @@ function setupConfig(logDir) {
             taskId: 'task1',
             step: 1,
             provider: 'claude-api',
-            action: { action: 'click', x: 100, y: 200, reason: 'test' },
+            action: { action: 'click', id: 4, reason: 'test' },
             outcome: 'success',
             durationMs: 500,
         };
@@ -46,20 +46,19 @@ function setupConfig(logDir) {
         const content = fs_1.default.readFileSync(csvPath, 'utf8');
         (0, vitest_1.expect)(content.startsWith('timestamp,task_id,step,provider,action,')).toBe(true);
     });
-    (0, vitest_1.it)('appends a row for click action with x/y', () => {
+    (0, vitest_1.it)('appends a row for click action with element id', () => {
         const entry = {
             taskId: 'abc',
             step: 2,
             provider: 'gemini',
-            action: { action: 'click', x: 300, y: 450, reason: 'click button' },
+            action: { action: 'click', id: 42, reason: 'click button' },
             outcome: 'success',
             durationMs: 123,
         };
         (0, logger_1.logStep)(entry);
         const content = fs_1.default.readFileSync(path_1.default.join(tmpDir, 'logger.csv'), 'utf8');
         (0, vitest_1.expect)(content).toContain('click');
-        (0, vitest_1.expect)(content).toContain('300');
-        (0, vitest_1.expect)(content).toContain('450');
+        (0, vitest_1.expect)(content).toContain('42');
         (0, vitest_1.expect)(content).toContain('click button');
         (0, vitest_1.expect)(content).toContain('gemini');
     });
@@ -82,7 +81,7 @@ function setupConfig(logDir) {
             taskId: 'err1',
             step: 1,
             provider: 'ollama',
-            action: { action: 'click', x: 0, y: 0, reason: 'test' },
+            action: { action: 'click', id: 0, reason: 'test' },
             outcome: 'error',
             error: 'element stale',
             durationMs: 10,

@@ -6,10 +6,10 @@ import { getActivePage } from './browser/instance';
 import {
   screenshot,
   saveScreenshot,
-  click,
-  doubleClick,
-  rightClick,
-  hover,
+  clickElement,
+  doubleClickElement,
+  rightClickElement,
+  hoverElement,
   drag,
   typeText,
   clearField,
@@ -21,6 +21,7 @@ import {
   goForward,
   reload,
 } from './browser/actions';
+import { annotatePage, clearMarks } from './browser/marks';
 import { logStep } from './logging/logger';
 import { logStats } from './logging/stats';
 
@@ -65,24 +66,30 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
   let outcome: RunResult['outcome'] = 'max_steps';
   let summary = 'Max steps reached without completion';
 
+  let noProgress = 0;
+
   for (let step = 1; step <= maxSteps; step++) {
     const pageUrl = page.url();
     console.log(`[step ${step}/${maxSteps}] screenshot → LLM  (url: ${pageUrl})`);
 
-    // Screenshot
+    // Annotate interactive elements, screenshot, then strip overlays (keep ids).
     let screenshotB64: string;
+    let marks: Awaited<ReturnType<typeof annotatePage>>;
     try {
+      marks = await annotatePage(page).catch(() => []);
       screenshotB64 = await screenshot(page);
     } catch (err) {
       console.error(`[step ${step}] screenshot failed:`, err);
       break;
+    } finally {
+      await clearMarks(page);
     }
 
     // LLM decision
     const llmStart = Date.now();
     let action: BrowserAction;
     try {
-      action = await provider.decideAction(options.task, screenshotB64, history, pageUrl);
+      action = await provider.decideAction(options.task, screenshotB64, history, pageUrl, marks);
     } catch (err) {
       console.error(`[step ${step}] LLM error:`, err);
       action = { action: 'failed', reason: `LLM error: ${String(err)}` };
@@ -111,6 +118,7 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
     const execStart = Date.now();
     let execOutcome: 'success' | 'error' = 'success';
     let execError: string | undefined;
+    const focusBefore = await describeFocus(page);
 
     try {
       await executeAction(page, action);
@@ -119,6 +127,29 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
       execError = String(err);
       console.error(`[step ${step}] execute error:`, err);
     }
+
+    // Feedback: what changed after the action (url + focused element).
+    if (step < maxSteps) {
+      await wait(config.agent.stepDelayMs);
+    }
+    const urlAfter = page.url();
+    const focusAfter = await describeFocus(page);
+    const urlChanged = urlAfter !== pageUrl;
+    const focusChanged = focusAfter !== focusBefore;
+
+    const fbParts: string[] = [];
+    if (urlChanged) fbParts.push(`URL → ${urlAfter}`);
+    if (focusChanged) fbParts.push(`focused: ${focusAfter || 'none'}`);
+    if (execOutcome === 'error') fbParts.push('action errored');
+
+    const interactive = ['click', 'double_click', 'right_click', 'hover', 'type', 'key', 'clear'].includes(action.action);
+    if (interactive && !urlChanged && !focusChanged && execOutcome === 'success') {
+      noProgress++;
+      fbParts.push('no visible change — last action likely missed; try a different element');
+    } else {
+      noProgress = 0;
+    }
+    const feedback = fbParts.join('; ') || 'no change detected';
 
     logStep({
       taskId: id,
@@ -129,10 +160,13 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
       error: execError,
       durationMs: Date.now() - execStart + llmMs,
     });
-    history.push({ step, action, outcome: execOutcome, error: execError });
+    history.push({ step, action, outcome: execOutcome, error: execError, feedback });
 
-    if (step < maxSteps) {
-      await wait(config.agent.stepDelayMs);
+    if (noProgress >= 5) {
+      outcome = 'failed';
+      summary = 'Stuck: 5 consecutive actions had no effect (elements may be misidentified).';
+      console.error(`[step ${step}] aborting — ${summary}`);
+      break;
     }
   }
 
@@ -156,15 +190,31 @@ export async function runTask(options: RunOptions): Promise<RunResult> {
   return { outcome, summary };
 }
 
+async function describeFocus(page: Page): Promise<string> {
+  return page
+    .evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body) return '';
+      const name =
+        el.getAttribute('aria-label') ||
+        (el as HTMLInputElement).placeholder ||
+        (el as HTMLInputElement).value ||
+        el.getAttribute('name') ||
+        (el.textContent || '').trim();
+      return `${el.tagName.toLowerCase()}${name ? `[${name.slice(0, 30)}]` : ''}`;
+    })
+    .catch(() => '');
+}
+
 async function executeAction(page: Page, action: BrowserAction): Promise<void> {
   switch (action.action) {
     case 'navigate':     await navigate(page, action.url); break;
-    case 'click':        await click(page, action.x, action.y); break;
-    case 'double_click': await doubleClick(page, action.x, action.y); break;
-    case 'right_click':  await rightClick(page, action.x, action.y); break;
-    case 'hover':        await hover(page, action.x, action.y); break;
+    case 'click':        await clickElement(page, action.id); break;
+    case 'double_click': await doubleClickElement(page, action.id); break;
+    case 'right_click':  await rightClickElement(page, action.id); break;
+    case 'hover':        await hoverElement(page, action.id); break;
     case 'drag':         await drag(page, action.fromX, action.fromY, action.toX, action.toY); break;
-    case 'type':         await typeText(page, action.text); break;
+    case 'type':         await typeText(page, action.text, action.id); break;
     case 'clear':        await clearField(page); break;
     case 'key':          await pressKey(page, action.key); break;
     case 'scroll':       await scroll(page, action.direction, action.pixels); break;

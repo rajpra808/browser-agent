@@ -38,9 +38,13 @@ function parseProviders(raw) {
     return out;
 }
 function defaultHeadless() {
-    if (process.platform !== 'linux')
-        return false;
-    return !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY;
+    // Headful by default (better stealth, lets you watch). Override via
+    // --headless / --no-headless or browser.headless in config.
+    // On Linux with no display server, headful can't launch — fall back to headless.
+    if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
+        return true;
+    }
+    return false;
 }
 function parseConfig(raw) {
     const browser = (raw['browser'] ?? {});

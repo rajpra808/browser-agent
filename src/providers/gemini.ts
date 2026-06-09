@@ -1,4 +1,5 @@
 import { AIProvider, ActionHistory, BrowserAction, SYSTEM_PROMPT, buildUserMessage, parseAction } from './base';
+import { Mark } from '../browser/marks';
 import { ProviderConfig } from '../config';
 
 export class GeminiProvider implements AIProvider {
@@ -15,9 +16,10 @@ export class GeminiProvider implements AIProvider {
     task: string,
     screenshotB64: string,
     history: ActionHistory[],
-    pageUrl?: string
+    pageUrl: string | undefined,
+    marks: Mark[]
   ): Promise<BrowserAction> {
-    const userMessage = buildUserMessage(task, history, pageUrl);
+    const userMessage = buildUserMessage(task, history, pageUrl, marks);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
 
     const res = await fetch(url, {

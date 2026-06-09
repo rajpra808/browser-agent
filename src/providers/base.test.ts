@@ -3,8 +3,8 @@ import { parseAction, buildUserMessage, getActionReason, BrowserAction, ActionHi
 
 describe('parseAction', () => {
   it('parses clean click JSON', () => {
-    const a = parseAction('{"action":"click","x":450,"y":230,"reason":"click login"}');
-    expect(a).toEqual({ action: 'click', x: 450, y: 230, reason: 'click login' });
+    const a = parseAction('{"action":"click","id":5,"reason":"click login"}');
+    expect(a).toEqual({ action: 'click', id: 5, reason: 'click login' });
   });
 
   it('parses type action', () => {
@@ -38,8 +38,8 @@ describe('parseAction', () => {
   });
 
   it('strips ```json markdown fences', () => {
-    const a = parseAction('```json\n{"action":"click","x":100,"y":200,"reason":"test"}\n```');
-    expect(a).toEqual({ action: 'click', x: 100, y: 200, reason: 'test' });
+    const a = parseAction('```json\n{"action":"click","id":3,"reason":"test"}\n```');
+    expect(a).toEqual({ action: 'click', id: 3, reason: 'test' });
   });
 
   it('strips plain ``` markdown fences', () => {
@@ -48,7 +48,7 @@ describe('parseAction', () => {
   });
 
   it('extracts JSON embedded in surrounding text', () => {
-    const a = parseAction('I will click the login button: {"action":"click","x":300,"y":150,"reason":"login btn"}');
+    const a = parseAction('I will click the login button: {"action":"click","id":7,"reason":"login btn"}');
     expect(a.action).toBe('click');
   });
 
@@ -57,35 +57,43 @@ describe('parseAction', () => {
   });
 
   it('throws when action field is missing', () => {
-    expect(() => parseAction('{"x":100,"y":200,"reason":"test"}')).toThrow();
+    expect(() => parseAction('{"id":4,"reason":"test"}')).toThrow();
   });
 });
 
 describe('buildUserMessage', () => {
   it('includes task in output', () => {
-    const msg = buildUserMessage('search cats', []);
+    const msg = buildUserMessage('search cats', [], undefined, []);
     expect(msg).toContain('TASK: search cats');
   });
 
   it('includes current URL when provided', () => {
-    const msg = buildUserMessage('search', [], 'https://google.com');
+    const msg = buildUserMessage('search', [], 'https://google.com', []);
     expect(msg).toContain('Current URL: https://google.com');
   });
 
   it('shows "No actions taken yet" for empty history', () => {
-    const msg = buildUserMessage('task', []);
+    const msg = buildUserMessage('task', [], undefined, []);
     expect(msg).toContain('No actions taken yet.');
+  });
+
+  it('renders the element list by id', () => {
+    const msg = buildUserMessage('task', [], undefined, [
+      { id: 5, tag: 'input', role: 'searchbox', name: 'Search' },
+    ]);
+    expect(msg).toContain('[5] input');
+    expect(msg).toContain('"Search"');
   });
 
   it('formats click history entry', () => {
     const history: ActionHistory[] = [{
       step: 1,
-      action: { action: 'click', x: 100, y: 200, reason: 'clicked btn' },
+      action: { action: 'click', id: 5, reason: 'clicked btn' },
       outcome: 'success',
     }];
-    const msg = buildUserMessage('task', history);
+    const msg = buildUserMessage('task', history, undefined, []);
     expect(msg).toContain('1.');
-    expect(msg).toContain('click(100,200)');
+    expect(msg).toContain('click(#5)');
     expect(msg).toContain('clicked btn');
   });
 
@@ -95,27 +103,38 @@ describe('buildUserMessage', () => {
       action: { action: 'type', text: 'hello', reason: 'enter text' },
       outcome: 'success',
     }];
-    const msg = buildUserMessage('task', history);
+    const msg = buildUserMessage('task', history, undefined, []);
     expect(msg).toContain('type("hello")');
+  });
+
+  it('appends feedback on history entry', () => {
+    const history: ActionHistory[] = [{
+      step: 1,
+      action: { action: 'click', id: 2, reason: 'test' },
+      outcome: 'success',
+      feedback: 'focused: input[Search]',
+    }];
+    const msg = buildUserMessage('task', history, undefined, []);
+    expect(msg).toContain('focused: input[Search]');
   });
 
   it('appends error info on failed history entry', () => {
     const history: ActionHistory[] = [{
       step: 1,
-      action: { action: 'click', x: 0, y: 0, reason: 'test' },
+      action: { action: 'click', id: 0, reason: 'test' },
       outcome: 'error',
       error: 'element not found',
     }];
-    const msg = buildUserMessage('task', history);
+    const msg = buildUserMessage('task', history, undefined, []);
     expect(msg).toContain('[ERROR: element not found]');
   });
 
   it('formats multiple history entries in order', () => {
     const history: ActionHistory[] = [
-      { step: 1, action: { action: 'click', x: 10, y: 20, reason: 'a' }, outcome: 'success' },
+      { step: 1, action: { action: 'click', id: 1, reason: 'a' }, outcome: 'success' },
       { step: 2, action: { action: 'type', text: 'hello', reason: 'b' }, outcome: 'success' },
     ];
-    const msg = buildUserMessage('task', history);
+    const msg = buildUserMessage('task', history, undefined, []);
     const idx1 = msg.indexOf('1.');
     const idx2 = msg.indexOf('2.');
     expect(idx1).toBeGreaterThanOrEqual(0);
@@ -123,14 +142,14 @@ describe('buildUserMessage', () => {
   });
 
   it('omits URL line when pageUrl not provided', () => {
-    const msg = buildUserMessage('task', []);
+    const msg = buildUserMessage('task', [], undefined, []);
     expect(msg).not.toContain('Current URL:');
   });
 });
 
 describe('getActionReason', () => {
   it('returns reason for click', () => {
-    const a: BrowserAction = { action: 'click', x: 0, y: 0, reason: 'click reason' };
+    const a: BrowserAction = { action: 'click', id: 0, reason: 'click reason' };
     expect(getActionReason(a)).toBe('click reason');
   });
 

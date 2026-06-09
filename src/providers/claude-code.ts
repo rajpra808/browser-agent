@@ -4,6 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { AIProvider, ActionHistory, BrowserAction, SYSTEM_PROMPT, buildUserMessage, parseAction } from './base';
+import { Mark } from '../browser/marks';
 import { ProviderConfig } from '../config';
 
 const execFileAsync = promisify(execFile);
@@ -17,9 +18,10 @@ export class ClaudeCodeProvider implements AIProvider {
     task: string,
     screenshotB64: string,
     history: ActionHistory[],
-    pageUrl?: string
+    pageUrl: string | undefined,
+    marks: Mark[]
   ): Promise<BrowserAction> {
-    const userMessage = buildUserMessage(task, history, pageUrl);
+    const userMessage = buildUserMessage(task, history, pageUrl, marks);
     const fullPrompt = `${SYSTEM_PROMPT}\n\n${userMessage}`;
 
     const tmpImg = path.join(os.tmpdir(), `browser-agent-${Date.now()}.png`);

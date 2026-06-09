@@ -10,8 +10,8 @@ class OpenAIProvider {
         this.apiKey = config.apiKey ?? '';
         this.model = config.model ?? 'gpt-4o-mini';
     }
-    async decideAction(task, screenshotB64, history, pageUrl) {
-        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl);
+    async decideAction(task, screenshotB64, history, pageUrl, marks) {
+        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl, marks);
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {

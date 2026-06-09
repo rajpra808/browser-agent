@@ -5,6 +5,7 @@ const config_1 = require("./config");
 const index_1 = require("./providers/index");
 const instance_1 = require("./browser/instance");
 const actions_1 = require("./browser/actions");
+const marks_1 = require("./browser/marks");
 const logger_1 = require("./logging/logger");
 const stats_1 = require("./logging/stats");
 function taskId() {
@@ -29,23 +30,29 @@ async function runTask(options) {
     const history = [];
     let outcome = 'max_steps';
     let summary = 'Max steps reached without completion';
+    let noProgress = 0;
     for (let step = 1; step <= maxSteps; step++) {
         const pageUrl = page.url();
         console.log(`[step ${step}/${maxSteps}] screenshot → LLM  (url: ${pageUrl})`);
-        // Screenshot
+        // Annotate interactive elements, screenshot, then strip overlays (keep ids).
         let screenshotB64;
+        let marks;
         try {
+            marks = await (0, marks_1.annotatePage)(page).catch(() => []);
             screenshotB64 = await (0, actions_1.screenshot)(page);
         }
         catch (err) {
             console.error(`[step ${step}] screenshot failed:`, err);
             break;
         }
+        finally {
+            await (0, marks_1.clearMarks)(page);
+        }
         // LLM decision
         const llmStart = Date.now();
         let action;
         try {
-            action = await provider.decideAction(options.task, screenshotB64, history, pageUrl);
+            action = await provider.decideAction(options.task, screenshotB64, history, pageUrl, marks);
         }
         catch (err) {
             console.error(`[step ${step}] LLM error:`, err);
@@ -72,6 +79,7 @@ async function runTask(options) {
         const execStart = Date.now();
         let execOutcome = 'success';
         let execError;
+        const focusBefore = await describeFocus(page);
         try {
             await executeAction(page, action);
         }
@@ -80,6 +88,30 @@ async function runTask(options) {
             execError = String(err);
             console.error(`[step ${step}] execute error:`, err);
         }
+        // Feedback: what changed after the action (url + focused element).
+        if (step < maxSteps) {
+            await (0, actions_1.wait)(config.agent.stepDelayMs);
+        }
+        const urlAfter = page.url();
+        const focusAfter = await describeFocus(page);
+        const urlChanged = urlAfter !== pageUrl;
+        const focusChanged = focusAfter !== focusBefore;
+        const fbParts = [];
+        if (urlChanged)
+            fbParts.push(`URL → ${urlAfter}`);
+        if (focusChanged)
+            fbParts.push(`focused: ${focusAfter || 'none'}`);
+        if (execOutcome === 'error')
+            fbParts.push('action errored');
+        const interactive = ['click', 'double_click', 'right_click', 'hover', 'type', 'key', 'clear'].includes(action.action);
+        if (interactive && !urlChanged && !focusChanged && execOutcome === 'success') {
+            noProgress++;
+            fbParts.push('no visible change — last action likely missed; try a different element');
+        }
+        else {
+            noProgress = 0;
+        }
+        const feedback = fbParts.join('; ') || 'no change detected';
         (0, logger_1.logStep)({
             taskId: id,
             step,
@@ -89,9 +121,12 @@ async function runTask(options) {
             error: execError,
             durationMs: Date.now() - execStart + llmMs,
         });
-        history.push({ step, action, outcome: execOutcome, error: execError });
-        if (step < maxSteps) {
-            await (0, actions_1.wait)(config.agent.stepDelayMs);
+        history.push({ step, action, outcome: execOutcome, error: execError, feedback });
+        if (noProgress >= 5) {
+            outcome = 'failed';
+            summary = 'Stuck: 5 consecutive actions had no effect (elements may be misidentified).';
+            console.error(`[step ${step}] aborting — ${summary}`);
+            break;
         }
     }
     const endTime = new Date();
@@ -111,28 +146,43 @@ async function runTask(options) {
     console.log(`[browser-agent] logs/logger.csv  |  logs/stats.csv\n`);
     return { outcome, summary };
 }
+async function describeFocus(page) {
+    return page
+        .evaluate(() => {
+        const el = document.activeElement;
+        if (!el || el === document.body)
+            return '';
+        const name = el.getAttribute('aria-label') ||
+            el.placeholder ||
+            el.value ||
+            el.getAttribute('name') ||
+            (el.textContent || '').trim();
+        return `${el.tagName.toLowerCase()}${name ? `[${name.slice(0, 30)}]` : ''}`;
+    })
+        .catch(() => '');
+}
 async function executeAction(page, action) {
     switch (action.action) {
         case 'navigate':
             await (0, actions_1.navigate)(page, action.url);
             break;
         case 'click':
-            await (0, actions_1.click)(page, action.x, action.y);
+            await (0, actions_1.clickElement)(page, action.id);
             break;
         case 'double_click':
-            await (0, actions_1.doubleClick)(page, action.x, action.y);
+            await (0, actions_1.doubleClickElement)(page, action.id);
             break;
         case 'right_click':
-            await (0, actions_1.rightClick)(page, action.x, action.y);
+            await (0, actions_1.rightClickElement)(page, action.id);
             break;
         case 'hover':
-            await (0, actions_1.hover)(page, action.x, action.y);
+            await (0, actions_1.hoverElement)(page, action.id);
             break;
         case 'drag':
             await (0, actions_1.drag)(page, action.fromX, action.fromY, action.toX, action.toY);
             break;
         case 'type':
-            await (0, actions_1.typeText)(page, action.text);
+            await (0, actions_1.typeText)(page, action.text, action.id);
             break;
         case 'clear':
             await (0, actions_1.clearField)(page);

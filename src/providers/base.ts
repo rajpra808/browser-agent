@@ -1,11 +1,13 @@
+import { Mark } from '../browser/marks';
+
 export type BrowserAction =
   | { action: 'navigate'; url: string; reason: string }
-  | { action: 'click'; x: number; y: number; reason: string }
-  | { action: 'double_click'; x: number; y: number; reason: string }
-  | { action: 'right_click'; x: number; y: number; reason: string }
-  | { action: 'hover'; x: number; y: number; reason: string }
+  | { action: 'click'; id: number; reason: string }
+  | { action: 'double_click'; id: number; reason: string }
+  | { action: 'right_click'; id: number; reason: string }
+  | { action: 'hover'; id: number; reason: string }
   | { action: 'drag'; fromX: number; fromY: number; toX: number; toY: number; reason: string }
-  | { action: 'type'; text: string; reason: string }
+  | { action: 'type'; text: string; id?: number; reason: string }
   | { action: 'clear'; reason: string }
   | { action: 'key'; key: string; reason: string }
   | { action: 'scroll'; direction: 'up' | 'down' | 'left' | 'right'; pixels: number; reason: string }
@@ -22,6 +24,7 @@ export interface ActionHistory {
   action: BrowserAction;
   outcome: 'success' | 'error';
   error?: string;
+  feedback?: string;
 }
 
 export interface AIProvider {
@@ -30,26 +33,29 @@ export interface AIProvider {
     task: string,
     screenshotB64: string,
     history: ActionHistory[],
-    pageUrl?: string
+    pageUrl: string | undefined,
+    marks: Mark[]
   ): Promise<BrowserAction>;
 }
 
-export const SYSTEM_PROMPT = `You are a browser automation agent. Complete tasks by analyzing browser screenshots and deciding what action to take next.
+export const SYSTEM_PROMPT = `You are a browser automation agent. Complete tasks by analyzing browser screenshots and deciding the next action — like a human using a browser.
+
+The screenshot is 1280x800. Every interactive element (links, buttons, inputs, etc.) is outlined with a colored box and a numbered label. To click, hover, or type into an element, reference it by its "id" number from the ELEMENTS list — NOT pixel coordinates. The id numbers match the labels drawn on the screenshot.
 
 Rules:
-- Examine the screenshot carefully before deciding
-- Pick the most logical next step toward completing the task
-- Respond with ONLY a JSON object — no markdown, no explanation, no code fences
-- Coordinates x and y are pixel positions in the screenshot
+- Examine the screenshot AND the ELEMENTS list before deciding.
+- To fill a field: pick its id, then type into it. Passing "id" to type focuses that field first, so you don't need a separate click.
+- After acting, the next message tells you what changed (URL, focused element). Use that feedback — if nothing changed, your last action missed; pick a different element or strategy, do NOT repeat the same action.
+- Respond with ONLY a JSON object — no markdown, no explanation, no code fences.
 
 Available actions (respond with exactly one):
 {"action":"navigate","url":"https://example.com","reason":"why"}
-{"action":"click","x":450,"y":230,"reason":"why"}
-{"action":"double_click","x":450,"y":230,"reason":"why"}
-{"action":"right_click","x":450,"y":230,"reason":"why"}
-{"action":"hover","x":450,"y":230,"reason":"why"}
+{"action":"click","id":5,"reason":"why"}
+{"action":"double_click","id":5,"reason":"why"}
+{"action":"right_click","id":5,"reason":"why"}
+{"action":"hover","id":5,"reason":"why"}
 {"action":"drag","fromX":100,"fromY":200,"toX":300,"toY":400,"reason":"why"}
-{"action":"type","text":"text to type","reason":"why"}
+{"action":"type","text":"text to type","id":3,"reason":"why"}
 {"action":"clear","reason":"why"}
 {"action":"key","key":"Enter","reason":"why"}
 {"action":"scroll","direction":"down","pixels":300,"reason":"why"}
@@ -65,13 +71,15 @@ Tips:
 - Prefer navigate over typing URLs into an address bar.
 - Use clear before type if a field already has text.
 - key supports: Enter, Tab, Escape, ArrowUp/Down/Left/Right, Backspace, etc.
-- scroll direction: up | down | left | right.
+- drag uses pixel coordinates (1280x800); all other targeting uses element id.
+- scroll direction: up | down | left | right. Scroll if the element you need is not in the list yet.
 - Keep reason under 10 words.`;
 
 export function buildUserMessage(
   task: string,
   history: ActionHistory[],
-  pageUrl?: string
+  pageUrl: string | undefined,
+  marks: Mark[]
 ): string {
   const urlLine = pageUrl ? `\nCurrent URL: ${pageUrl}` : '';
 
@@ -84,12 +92,12 @@ export function buildUserMessage(
             let desc: string;
             switch (a.action) {
               case 'navigate':     desc = `navigate(${a.url}) — ${a.reason}`; break;
-              case 'click':        desc = `click(${a.x},${a.y}) — ${a.reason}`; break;
-              case 'double_click': desc = `double_click(${a.x},${a.y}) — ${a.reason}`; break;
-              case 'right_click':  desc = `right_click(${a.x},${a.y}) — ${a.reason}`; break;
-              case 'hover':        desc = `hover(${a.x},${a.y}) — ${a.reason}`; break;
+              case 'click':        desc = `click(#${a.id}) — ${a.reason}`; break;
+              case 'double_click': desc = `double_click(#${a.id}) — ${a.reason}`; break;
+              case 'right_click':  desc = `right_click(#${a.id}) — ${a.reason}`; break;
+              case 'hover':        desc = `hover(#${a.id}) — ${a.reason}`; break;
               case 'drag':         desc = `drag(${a.fromX},${a.fromY}→${a.toX},${a.toY}) — ${a.reason}`; break;
-              case 'type':         desc = `type("${a.text}") — ${a.reason}`; break;
+              case 'type':         desc = `type("${a.text}"${a.id !== undefined ? `, #${a.id}` : ''}) — ${a.reason}`; break;
               case 'clear':        desc = `clear — ${a.reason}`; break;
               case 'scroll':       desc = `scroll(${a.direction},${a.pixels}px) — ${a.reason}`; break;
               case 'key':          desc = `key(${a.key}) — ${a.reason}`; break;
@@ -102,7 +110,18 @@ export function buildUserMessage(
               case 'failed':       desc = `failed: ${a.reason}`; break;
             }
             const status = h.outcome === 'error' ? ` [ERROR: ${h.error}]` : '';
-            return `  ${h.step}. ${desc}${status}`;
+            const fb = h.feedback ? ` → ${h.feedback}` : '';
+            return `  ${h.step}. ${desc}${status}${fb}`;
+          })
+          .join('\n');
+
+  const elementsText =
+    marks.length === 0
+      ? 'No interactive elements detected. Try scroll, navigate, or wait.'
+      : marks
+          .map((m) => {
+            const label = [m.role && `${m.role}`, m.name && `"${m.name}"`].filter(Boolean).join(' ');
+            return `  [${m.id}] ${m.tag}${label ? ' ' + label : ''}`;
           })
           .join('\n');
 
@@ -110,6 +129,9 @@ export function buildUserMessage(
 
 Previous actions:
 ${historyText}
+
+ELEMENTS (reference by id):
+${elementsText}
 
 Look at the screenshot and respond with the next action JSON.`;
 }

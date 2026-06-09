@@ -14,8 +14,8 @@ const execFileAsync = (0, util_1.promisify)(child_process_1.execFile);
 class ClaudeCodeProvider {
     name = 'claude-code';
     constructor(_config) { }
-    async decideAction(task, screenshotB64, history, pageUrl) {
-        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl);
+    async decideAction(task, screenshotB64, history, pageUrl, marks) {
+        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl, marks);
         const fullPrompt = `${base_1.SYSTEM_PROMPT}\n\n${userMessage}`;
         const tmpImg = path_1.default.join(os_1.default.tmpdir(), `browser-agent-${Date.now()}.png`);
         fs_1.default.writeFileSync(tmpImg, Buffer.from(screenshotB64, 'base64'));

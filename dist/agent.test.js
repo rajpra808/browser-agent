@@ -52,11 +52,25 @@ vitest_1.vi.mock('./browser/instance', () => ({
 }));
 vitest_1.vi.mock('./browser/actions', () => ({
     screenshot: vitest_1.vi.fn(),
-    click: vitest_1.vi.fn(),
+    saveScreenshot: vitest_1.vi.fn(),
+    clickElement: vitest_1.vi.fn(),
+    doubleClickElement: vitest_1.vi.fn(),
+    rightClickElement: vitest_1.vi.fn(),
+    hoverElement: vitest_1.vi.fn(),
+    drag: vitest_1.vi.fn(),
     typeText: vitest_1.vi.fn(),
+    clearField: vitest_1.vi.fn(),
     scroll: vitest_1.vi.fn(),
     pressKey: vitest_1.vi.fn(),
     wait: vitest_1.vi.fn(),
+    navigate: vitest_1.vi.fn(),
+    goBack: vitest_1.vi.fn(),
+    goForward: vitest_1.vi.fn(),
+    reload: vitest_1.vi.fn(),
+}));
+vitest_1.vi.mock('./browser/marks', () => ({
+    annotatePage: vitest_1.vi.fn(() => Promise.resolve([])),
+    clearMarks: vitest_1.vi.fn(() => Promise.resolve()),
 }));
 vitest_1.vi.mock('./logging/logger', () => ({
     logStep: vitest_1.vi.fn(),
@@ -78,12 +92,16 @@ function makeProvider(responses) {
     };
 }
 function makePage() {
-    return { url: vitest_1.vi.fn(() => 'https://test.com'), isClosed: vitest_1.vi.fn(() => false) };
+    return {
+        url: vitest_1.vi.fn(() => 'https://test.com'),
+        isClosed: vitest_1.vi.fn(() => false),
+        evaluate: vitest_1.vi.fn(() => Promise.resolve('')),
+    };
 }
 (0, vitest_1.beforeEach)(() => {
     vitest_1.vi.clearAllMocks();
     actions.screenshot.mockResolvedValue('base64screenshot');
-    actions.click.mockResolvedValue(undefined);
+    actions.clickElement.mockResolvedValue(undefined);
     actions.typeText.mockResolvedValue(undefined);
     actions.scroll.mockResolvedValue(undefined);
     actions.pressKey.mockResolvedValue(undefined);
@@ -109,7 +127,7 @@ function makePage() {
         (0, vitest_1.expect)(result.summary).toBe('blocked by captcha');
     });
     (0, vitest_1.it)('returns max_steps when provider never finishes', async () => {
-        const provider = makeProvider([{ action: 'click', x: 100, y: 200, reason: 'keep clicking' }]);
+        const provider = makeProvider([{ action: 'click', id: 1, reason: 'keep clicking' }]);
         index_1.createProvider.mockReturnValue(provider);
         instance_1.getActivePage.mockResolvedValue({ page: makePage() });
         const result = await (0, agent_1.runTask)({ task: 'test task', maxSteps: 3 });
@@ -117,13 +135,13 @@ function makePage() {
     });
     (0, vitest_1.it)('executes click action via browser', async () => {
         const provider = makeProvider([
-            { action: 'click', x: 300, y: 400, reason: 'click search' },
+            { action: 'click', id: 7, reason: 'click search' },
             { action: 'done', summary: 'clicked' },
         ]);
         index_1.createProvider.mockReturnValue(provider);
         instance_1.getActivePage.mockResolvedValue({ page: makePage() });
         await (0, agent_1.runTask)({ task: 'test task' });
-        (0, vitest_1.expect)(actions.click).toHaveBeenCalledWith(vitest_1.expect.anything(), 300, 400);
+        (0, vitest_1.expect)(actions.clickElement).toHaveBeenCalledWith(vitest_1.expect.anything(), 7);
     });
     (0, vitest_1.it)('executes type action via browser', async () => {
         const provider = makeProvider([
@@ -133,7 +151,7 @@ function makePage() {
         index_1.createProvider.mockReturnValue(provider);
         instance_1.getActivePage.mockResolvedValue({ page: makePage() });
         await (0, agent_1.runTask)({ task: 'test task' });
-        (0, vitest_1.expect)(actions.typeText).toHaveBeenCalledWith(vitest_1.expect.anything(), 'hello world');
+        (0, vitest_1.expect)(actions.typeText).toHaveBeenCalledWith(vitest_1.expect.anything(), 'hello world', undefined);
     });
     (0, vitest_1.it)('executes scroll action via browser', async () => {
         const provider = makeProvider([
@@ -157,7 +175,7 @@ function makePage() {
     });
     (0, vitest_1.it)('logs each step to logger.csv', async () => {
         const provider = makeProvider([
-            { action: 'click', x: 0, y: 0, reason: 'step 1' },
+            { action: 'click', id: 0, reason: 'step 1' },
             { action: 'done', summary: 'done' },
         ]);
         index_1.createProvider.mockReturnValue(provider);
@@ -187,9 +205,9 @@ function makePage() {
         (0, vitest_1.expect)(instance_1.getActivePage).toHaveBeenCalledWith('instagram_main', vitest_1.expect.anything());
     });
     (0, vitest_1.it)('continues on browser execute error and marks step as error', async () => {
-        actions.click.mockRejectedValueOnce(new Error('click failed'));
+        actions.clickElement.mockRejectedValueOnce(new Error('click failed'));
         const provider = makeProvider([
-            { action: 'click', x: 0, y: 0, reason: 'try click' },
+            { action: 'click', id: 0, reason: 'try click' },
             { action: 'done', summary: 'recovered' },
         ]);
         index_1.createProvider.mockReturnValue(provider);

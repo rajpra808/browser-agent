@@ -10,8 +10,8 @@ class GeminiProvider {
         this.apiKey = config.apiKey ?? '';
         this.model = config.model ?? 'gemini-3-flash-preview';
     }
-    async decideAction(task, screenshotB64, history, pageUrl) {
-        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl);
+    async decideAction(task, screenshotB64, history, pageUrl, marks) {
+        const userMessage = (0, base_1.buildUserMessage)(task, history, pageUrl, marks);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
         const res = await fetch(url, {
             method: 'POST',

@@ -5,10 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveScreenshot = saveScreenshot;
 exports.screenshot = screenshot;
-exports.click = click;
-exports.doubleClick = doubleClick;
-exports.rightClick = rightClick;
-exports.hover = hover;
+exports.clickElement = clickElement;
+exports.doubleClickElement = doubleClickElement;
+exports.rightClickElement = rightClickElement;
+exports.hoverElement = hoverElement;
+exports.focusElement = focusElement;
 exports.drag = drag;
 exports.typeText = typeText;
 exports.clearField = clearField;
@@ -50,17 +51,23 @@ async function screenshot(page) {
         return buf.toString('base64');
     }
 }
-async function click(page, x, y) {
-    await page.mouse.click(x, y);
+function markLocator(page, id) {
+    return page.locator(`[data-som-id="${id}"]`);
 }
-async function doubleClick(page, x, y) {
-    await page.mouse.dblclick(x, y);
+async function clickElement(page, id) {
+    await markLocator(page, id).click({ timeout: 5_000 });
 }
-async function rightClick(page, x, y) {
-    await page.mouse.click(x, y, { button: 'right' });
+async function doubleClickElement(page, id) {
+    await markLocator(page, id).dblclick({ timeout: 5_000 });
 }
-async function hover(page, x, y) {
-    await page.mouse.move(x, y);
+async function rightClickElement(page, id) {
+    await markLocator(page, id).click({ button: 'right', timeout: 5_000 });
+}
+async function hoverElement(page, id) {
+    await markLocator(page, id).hover({ timeout: 5_000 });
+}
+async function focusElement(page, id) {
+    await markLocator(page, id).click({ timeout: 5_000 });
 }
 async function drag(page, fromX, fromY, toX, toY) {
     await page.mouse.move(fromX, fromY);
@@ -68,7 +75,9 @@ async function drag(page, fromX, fromY, toX, toY) {
     await page.mouse.move(toX, toY, { steps: 10 });
     await page.mouse.up();
 }
-async function typeText(page, text) {
+async function typeText(page, text, id) {
+    if (id !== undefined)
+        await focusElement(page, id);
     await page.keyboard.type(text, { delay: 50 });
 }
 async function clearField(page) {
